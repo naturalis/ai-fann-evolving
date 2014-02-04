@@ -13,9 +13,21 @@ our $VERSION = '0.1';
 my $log = Algorithm::Genetic::Diploid->logger;
 my %self;
 
-# requires 'file', or 'data' and 'neurons' arguments. optionally takes 
-# 'connection_rate' argument for sparse topologies. all other arguments
-# are handled by _init
+=head1 NAME
+
+AI::FANN::Evolving - artificial neural network that evolves
+
+=head1 METHODS
+
+=over
+
+=item new
+
+Constructor requires 'file', or 'data' and 'neurons' arguments. Optionally takes 
+'connection_rate' argument for sparse topologies. Returns a subclass of L<AI::FANN>.
+
+=cut
+
 sub new {
 	my $class = shift;
 	my %args  = @_;
@@ -76,6 +88,13 @@ sub DESTROY {
 	delete $self{$id};	
 }
 
+=item clone
+
+Clones the ANN by serializing it to a temporary file and creating a new instance
+from that file
+
+=cut
+
 sub clone {
 	my $self = shift;
 	my ( $fh, $name ) = tempfile();
@@ -85,7 +104,12 @@ sub clone {
 	return $clone;
 }
 
-# trains the AI on the provided data object
+=item train
+
+Trains the AI on the provided data object
+
+=cut
+
 sub train {
 	my ( $self, $data ) = @_;
 	if ( $self->train_type eq 'cascade' ) {
@@ -117,8 +141,13 @@ sub train {
 	}
 }
 
-# returns a list of names for the AI::FANN properties that are
-# continuous valued and that could be evolved
+=item continuous_properties
+
+Returns a list of names for the AI::FANN properties that are continuous valued and that 
+can be mutated
+
+=cut
+
 sub continuous_properties {
 	(
 		'learning_rate',
@@ -136,13 +165,23 @@ sub continuous_properties {
 	);
 }
 
-# returns a list of names for the AI::FANN properties that are
-# discrete valued and that could be evolved
+=item discrete_properties
+
+Returns a list of names for the AI::FANN properties that are discrete valued and that 
+can be mutated
+
+=cut
+
 sub discrete_properties {
 
 }
 
-# default is 0.0001
+=item error
+
+Getter/setter for the error rate. Default is 0.0001
+
+=cut
+
 sub error {
 	my $ref = shift;
 	my $id = refaddr $ref;
@@ -150,7 +189,12 @@ sub error {
 	return $self{$id}->{'error'};
 }
 
-# number of training epochs, default is 500000
+=item epochs
+
+Getter/setter for the number of training epochs, default is 500000
+
+=cut
+
 sub epochs {
 	my $ref = shift;
 	my $id = refaddr $ref;
@@ -158,7 +202,12 @@ sub epochs {
 	return $self{$id}->{'epochs'};
 }
 
-# number of epochs after which progress is printed. default is 1000
+=item epoch_printfreq
+
+Getter/setter for the number of epochs after which progress is printed. default is 1000
+
+=cut
+
 sub epoch_printfreq {
 	my $ref = shift;
 	my $id = refaddr $ref;
@@ -166,7 +215,12 @@ sub epoch_printfreq {
 	return $self{$id}->{'epoch_printfreq'};
 }
 
-# number of neurons
+=item neurons
+
+Getter/setter for the number of neurons. Default is 15
+
+=cut
+
 sub neurons {
 	my $ref = shift;
 	my $id = refaddr $ref;
@@ -174,7 +228,13 @@ sub neurons {
 	return $self{$id}->{'neurons'};
 }
 
-# number of cascading neurons after which progress is printed. default is 10
+=item neuron_printfreq
+
+Getter/setter for the number of cascading neurons after which progress is printed. 
+default is 10
+
+=cut
+
 sub neuron_printfreq {
 	my $ref = shift;
 	my $id = refaddr $ref;
@@ -182,7 +242,12 @@ sub neuron_printfreq {
 	return $self{$id}->{'neuron_printfreq'};
 }
 
-# 'cascade' or 'ordinary'. default is ordinary
+=item train_type
+
+Getter/setter for the training type: 'cascade' or 'ordinary'. Default is ordinary
+
+=cut
+
 sub train_type {
 	my $ref = shift;
 	my $id = refaddr $ref;
@@ -190,7 +255,15 @@ sub train_type {
 	return $self{$id}->{'train_type'};
 }
 
-# the function that maps inputs to outputs. default is FANN_SIGMOID_SYMMETRIC
+=item activation_function
+
+Getter/setter for the function that maps inputs to outputs. default is 
+FANN_SIGMOID_SYMMETRIC
+
+=back
+
+=cut
+
 sub activation_function {
 	my $ref = shift;
 	my $id = refaddr $ref;

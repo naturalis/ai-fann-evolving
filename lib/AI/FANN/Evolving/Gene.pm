@@ -9,6 +9,20 @@ use base 'Algorithm::Genetic::Diploid::Gene';
 
 my $log = __PACKAGE__->logger;
 
+=head1 NAME
+
+AI::FANN::Evolving::Gene - gene that codes for an artificial neural network (ANN)
+
+=head1 METHODS
+
+=over
+
+=item new
+
+Constructor is passed named arguments. Instantiates a trained L<AI::FANN::Evolving> ANN
+
+=cut
+
 sub new {
 
 	# initialize self up the inheritance tree
@@ -20,14 +34,25 @@ sub new {
 	return $self;
 }
 
-# getter/setter for AI::FANN::Evolving object
+=item ann
+
+Getter/setter for an L<AI::FANN::Evolving> ANN
+
+=cut
+
 sub ann {
 	my $self = shift;
 	$self->{'ann'} = shift if @_;
 	return $self->{'ann'};
 }
 
-# returns a code reference to the fitness function
+=item make_function
+
+Returns a code reference to the fitness function, which when executed returns a fitness
+value and writes the corresponding ANN to file
+
+=cut
+
 sub make_function {
 	my $self = shift;
 	my $ann = $self->ann;
@@ -67,10 +92,23 @@ sub make_function {
 	}
 }
 
-# stores the fitness value after expressing the fitness function
+=item fitness
+
+Stores the fitness value after expressing the fitness function
+
+=cut
+
 sub fitness { shift->{'fitness'} }
 
-# mutates the genotype
+=item mutate
+
+Mutates the ANN by stochastically altering its properties in proportion to 
+the mutation_rate
+
+=back
+
+=cut
+
 sub mutate {
 	my $self = shift;
 	

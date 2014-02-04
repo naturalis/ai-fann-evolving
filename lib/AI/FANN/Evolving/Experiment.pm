@@ -8,7 +8,22 @@ use base 'Algorithm::Genetic::Diploid::Experiment';
 
 my $log = __PACKAGE__->logger;
 
-# get/set workdir
+=head1 NAME
+
+AI::FANN::Evolving::Experiment - an experiment in evolving artificial intelligence
+
+=head1 METHODS
+
+=over
+
+=item workdir
+
+Getter/Setter for the workdir where L<AI::FANN> artificial neural networks will be
+written during the experiment. The files will be named after the ANN's error, which 
+needs to be minimized.
+
+=cut
+
 sub workdir {
 	my $self = shift;
 	if ( @_ ) {
@@ -18,7 +33,12 @@ sub workdir {
 	return $self->{'workdir'};
 }
 
-# get/set TrainData object
+=item traindata
+
+Getter/setter for the L<AI::FANN::TrainData> object.
+
+=cut
+
 sub traindata {
 	my $self = shift;
 	if ( @_ ) {
@@ -28,7 +48,15 @@ sub traindata {
 	return $self->{'traindata'};
 }
 
-# the optimum is zero wrong predictions
+=item optimum
+
+The optimal fitness is zero error in the ANN's classification. This method returns 
+that value: 0.
+
+=back
+
+=cut
+
 sub optimum { 0 }
 
 1;

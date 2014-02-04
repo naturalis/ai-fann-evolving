@@ -7,6 +7,22 @@ use base 'Algorithm::Genetic::Diploid::Chromosome';
 
 my $log = __PACKAGE__->logger;
 
+=head1 NAME
+
+AI::FANN::Evolving::Chromosome - chromosome of an evolving, diploid AI
+
+=head1 METHODS
+
+=over
+
+=item recombine
+
+Recombines properties of the AI during meiosis in proportion to the crossover_rate
+
+=back
+
+=cut
+
 sub recombine {
 	# get the genes and columns for the two chromosomes
 	my ( $chr1, $chr2 ) = @_;
