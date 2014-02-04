@@ -4,7 +4,6 @@ use AI::FANN ':all';
 use File::Temp 'tempfile';
 use Scalar::Util 'refaddr';
 use AI::FANN::Evolving::Gene;
-use AI::FANN::Evolving::TrainData;
 use AI::FANN::Evolving::Chromosome;
 use AI::FANN::Evolving::Experiment;
 use Algorithm::Genetic::Diploid;
