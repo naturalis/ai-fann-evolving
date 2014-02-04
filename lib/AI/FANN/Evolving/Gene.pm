@@ -4,7 +4,6 @@ use warnings;
 use List::Util 'shuffle';
 use Scalar::Util 'refaddr';
 use AI::FANN::Evolving;
-use AI::FANN::Evolving::TrainData;
 use Algorithm::Genetic::Diploid;
 use base 'Algorithm::Genetic::Diploid::Gene';
 
@@ -21,6 +20,7 @@ sub new {
 	return $self;
 }
 
+# getter/setter for AI::FANN::Evolving object
 sub ann {
 	my $self = shift;
 	$self->{'ann'} = shift if @_;
@@ -30,64 +30,47 @@ sub ann {
 # returns a code reference to the fitness function
 sub make_function {
 	my $self = shift;
+	my $ann = $self->ann;
 	$log->debug("making fitness function");
 	
 	# build the fitness function
-	return sub {
+	return sub {		
 	
 		# isa TrainingData object, this is what we need to use
 		# to make our prognostications. It is a different data 
 		# set (out of sample) than the TrainingData object that
 		# the AI was trained on.
-		my $env = shift;
-		my @expected = $env->get_dependent;
-		my $neurons = $self->neurons;		
-		$log->debug("adaptive landscape is $env");
-
-		# test all predictions
-		my ( $lls, $ls ) = ( 0, 0 ); # Longest Losing Streak
-		my ( $right, $wrong ) = ( 0, 0 );
-		my $ann = $self->ann;
-		for my $i ( 0 .. $#expected - $neurons - 1 ) {
+		my $env = shift;		
+		
+		# this is a number which we try to keep as near to zero
+		# as possible
+		my $fitness = 0;
+		
+		# iterate over the list of input/output pairs
+		for my $i ( 0 .. $env->length ) {
+			my ( $input, $expected ) = $env->data($i);
+			my $observed = $ann->run($input);
 			
-			# run prognostication over a time window
-			my @window;
-			for my $j ( $i .. $i + $neurons ) {
-				push @window, $expected[$j];
+			# iterate over the observed and expected values
+			for my $j ( 0 .. $#{ $expected } ) {
+				$fitness += abs( $observed->[$j] - $expected->[$j] );				
 			}
-			my $obs = $ann->run( \@window )->[0];
-			
-			# get the expectation, this is one day beyond the window
-			my $exp = $expected[ $i + $neurons + 1 ];
-			
-			# prediction is wrong if $exp and $obs
-			# are on either side of zero
-			if ( $exp > 0 xor $obs > 0 ) {
-				$wrong++;
-				$ls++;
-				$lls = $ls if $ls > $lls;
-			}
-			else {
-				$right++;
-				$ls = 0;
-			}
-
-			$log->debug( "expected: $exp - observed: $obs" );
 		}
 		
-		# return value is $wrong / $right, so optimum is 0
-		my $fitness = $wrong / $right;
+		# store result
 		$self->{'fitness'} = $fitness;
-		my $id = $self->id;
-		$log->info("fitness = $fitness, longest losing streak = $lls, id = $id");
-		$self->{'fann_file'} = $self->experiment->workdir . "/${fitness}.ann";
-		$self->ann->save($self->{'fann_file'});
+
+		# store the AI		
+		my $outfile = $self->experiment->workdir . "/${fitness}.ann";
+		$self->ann->save($outfile);
 		return $self->{'fitness'};
 	}
 }
 
+# stores the fitness value after expressing the fitness function
 sub fitness { shift->{'fitness'} }
 
+# mutates the genotype
 sub mutate {
 	my $self = shift;
 	
@@ -100,6 +83,7 @@ sub mutate {
 	$self->ann( $ann_clone );
 	
 	# properties of ann we might mutate
+	# XXX equally do this for discrete properties?
 	for my $prop ( AI::FANN::Evolving->continuous_properties ) {
 	
 		# mutate by a value <= $mu
@@ -114,9 +98,7 @@ sub mutate {
 		$npropval *= -1 if $propval < 0 xor $npropval < 0;
 		$ann_clone->$prop( $npropval );
 	}
-	$self->experiment->fann_trainer( 
-		$ann_clone, $self->make_timeseries_data, $self->neurons
-	);
+	$ann_clone->train( $self->experiment->traindata );
 	return $self;
 }
 
