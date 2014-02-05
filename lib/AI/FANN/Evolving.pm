@@ -6,6 +6,7 @@ use Scalar::Util 'refaddr';
 use AI::FANN::Evolving::Gene;
 use AI::FANN::Evolving::Chromosome;
 use AI::FANN::Evolving::Experiment;
+use AI::FANN::Evolving::Factory;
 use Algorithm::Genetic::Diploid;
 use base 'AI::FANN';
 
