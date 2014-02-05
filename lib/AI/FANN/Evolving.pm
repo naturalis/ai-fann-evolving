@@ -41,10 +41,10 @@ sub new {
 	
 	# build new topology
 	elsif ( my $data = $args{'data'} ) {
-		die "Need 'neurons' argument when building from scratch!";
+		my $neurons = $args{'neurons'} || ( $data->num_inputs + 1 );
 		my @sizes = ( 
 			$data->num_inputs, 
-			$args{'neurons'},
+			$neurons,
 			$data->num_outputs
 		);
 		
@@ -74,7 +74,7 @@ sub _init {
 	$self{$id} = {
 		'error'               => $args{'error'}               || 0.0001,
 		'epochs'              => $args{'epochs'}              || 5000,		
-		'training_type'       => $args{'training_type'}       || 'ordinary',		
+		'train_type'          => $args{'train_type'}          || 'ordinary',		
 		'epoch_printfreq'     => $args{'epoch_printfreq'}     || 1000,
 		'neuron_printfreq'    => $args{'neuron_printfreq'}    || 10,
 		'neurons'             => $args{'neurons'}             || 15,
