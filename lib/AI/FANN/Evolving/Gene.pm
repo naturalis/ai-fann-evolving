@@ -4,8 +4,9 @@ use warnings;
 use List::Util 'shuffle';
 use Scalar::Util 'refaddr';
 use AI::FANN::Evolving;
-use Algorithm::Genetic::Diploid;
+use Algorithm::Genetic::Diploid::Gene;
 use base 'Algorithm::Genetic::Diploid::Gene';
+use Data::Dumper;
 
 my $log = __PACKAGE__->logger;
 
@@ -72,7 +73,7 @@ sub make_function {
 		my $fitness = 0;
 		
 		# iterate over the list of input/output pairs
-		for my $i ( 0 .. $env->length ) {
+		for my $i ( 0 .. ( $env->length - 1 ) ) {
 			my ( $input, $expected ) = $env->data($i);
 			my $observed = $ann->run($input);
 			
