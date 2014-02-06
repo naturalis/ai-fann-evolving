@@ -1,0 +1,52 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use POD::Usage;
+use Getopt::Long;
+use AI::FANN::Evolving;
+use YAML::Any 'LoadFile';
+use Algorithm::Genetic::Diploid::Logger ':levels';
+
+# process command line arguments
+my $verbosity = WARN; # log level
+my %initialize; # settings to start the population
+my %data; # train and test data
+my %experiment; # experiment settings
+
+# first argument is a config file
+if ( -e $ARGV[0] ) {
+	my $conf = shift;
+	my $yaml = LoadFile($conf);
+	$verbosity  = $yaml->{verbosity}       if defined $yaml->{verbosity};
+	%initialize = %{ $yaml->{initialize} } if defined $yaml->{initialize};
+	%data       = %{ $yaml->{data} }       if defined $yaml->{data};
+	%experiment = %{ $yaml->{experiment} } if defined $yaml->{experiment};
+}
+
+# process command line arguments
+GetOptions(
+	'verbose+'     => \$verbosity,
+	'conf=s'       => \$conf,
+	'initialize=s' => \%initialize,
+	'data=s'       => \%data,
+	'experiment=s' => \%experiment,
+);
+
+# XXX not yet implemented! read input data
+my $traindata = AI::FANN::Evolving::TrainData->new( 'file' => $data{train} );
+my $testdata  = AI::FANN::Evolving::TrainData->new( 'file' => $data{test}  );
+
+# create the experiment
+my $exp = AI::FANN::Evolving::Experiment->new( 
+	'traindata' => $traindata,
+	'env'       => $testdata,	
+	'factory'   => AI::FANN::Evolving::Factory->new,
+	%experiment,
+);
+
+# initialize the experiment
+$exp->initialize(%initialize);
+
+# run!
+$exp->run();
+
