@@ -8,12 +8,10 @@ sub new {
 	my $class = shift;
 	my %args  = @_;
 	my $self  = {
-		'skip'      => $args{'skip'}      || [],
-		'dependent' => $args{'dependent'} || undef,
-		'offset'    => $args{'offset'}    || 1,
+		'ignore'    => $args{'ignore'}    || [ 'ID' ],
+		'dependent' => $args{'dependent'} || [ 'CLASS' ],
 		'header'    => {},
 		'table'     => [],
-		'size'      => 0,
 	};
 	bless $self, $class;
 	$self->read_data($args{'file'}) if $args{'file'};
@@ -21,29 +19,100 @@ sub new {
 	return $self;
 }
 
-sub skip {
+=item ignore_columns
+
+Getter/setter for column names to ignore in the train data structure. 
+For example: an identifier columns named 'ID'
+
+=cut
+
+sub ignore_columns {
 	my $self = shift;
-	$self->{'skip'} = \@_ if @_;
-	return @{ $self->{'skip'} };
+	$self->{'ignore'} = \@_ if @_;
+	return @{ $self->{'ignore'} };
 }
 
-sub get_predictor_columns {
+=item dependent_columns
+
+Getter/setter for column name(s) of the output value(s).
+
+=cut
+
+sub dependent_columns {
 	my $self = shift;
-	my %skip = map { $_ => 1 } $self->skip;
+	$self->{'dependent'} = \@_ if @_;
+	return @{ $self->{'dependent'} };
+}
+
+=item predictor_columns
+
+Getter for column name(s) of input value(s)
+
+=cut
+
+sub predictor_columns {
+	my $self = shift;
+	my @others = ( $self->ignore_columns, $self->dependent_columns );
+	my %skip = map { $_ => 1 } @others;
 	return grep { ! $skip{$_} } keys %{ $self->{'header'} };
 }
 
-sub to_fann {
-	my ( $self, @cols ) = @_;
-	my @deps = $self->get_dependent;
-	my @pred = $self->get_predictors( 'cols' => \@cols );
-	my @interdigitated;
-	my $ncols;
-	for my $i ( 0 .. $#deps ) {
-		$ncols = scalar @{ $pred[$i] };
-		push @interdigitated, $pred[$i], [ $deps[$i] ];
+=item predictor_data
+
+Getter for rows of input values
+
+=cut
+
+sub predictor_data {
+	my ( $self, %args ) = @_;
+	my $i = $args{'row'};
+	my @cols = $args{'cols'} ? @{ $args{'cols'} } : $self->predictor_columns;
+	
+	# build hash of indices to keep
+	my %keep = map { $self->{'header'}->{$_} => 1 } @cols;
+	
+	# only return a single row
+	if ( defined $i ) {
+		my @pred;
+		for my $j ( 0 .. $#{ $self->{'table'}->[$i] } ) {
+			push @pred, $self->{'table'}->[$i]->[$j] if $keep{$j};
+		}
+		return \@pred;
 	}
-	$log->debug("number of columns: $ncols");
+	else {
+		my @preds;
+		my $max = $self->{'size'} - 1;
+		for my $j ( 0 .. $max ) {
+			push @preds, [ $self->predictor_data( 'row' => $j, 'cols' => \@cols) ];
+		}
+		return @preds;
+	}
+}
+
+sub dependent_data {
+	my ( $self, $i ) = @_;
+	my @dc = map { $self->{'header'}->{$_} } $self->dependent_columns;
+	if ( defined $i ) {
+		return [ map { $self->{'table'}->[$i]->[$_] } @dc ];
+	}
+	else {
+		my @dep;
+		for $i ( 0 .. $self->{'size'} - 1 ) {
+			push @dep, $self->dependent_data($i);
+		}
+		return @dep;
+	}
+}
+
+sub to_fann {
+	my $self = shift;
+	my @cols = @_ ? @_ : $self->predictor_columns;
+	my @deps = $self->dependent_data;
+	my @pred = $self->predictor_data( 'cols' => \@cols );
+	my @interdigitated;
+	for my $i ( 0 .. $#deps ) {
+		push @interdigitated, $pred[$i], $deps[$i];
+	}
 	return AI::FANN::TrainData->new(@interdigitated);
 }
 
@@ -105,66 +174,6 @@ sub trim_data {
 	$log->info("removed $num incomplete rows");
 	$self->{'size'}  = scalar @trimmed;
 	$self->{'table'} = \@trimmed;
-}
-
-sub get_predictor_count {
-	my $self = shift;
-	my %skip = map { $_ => 1 } @{ $self->{'skip'} };
-	my @h = sort { $a cmp $b } grep { ! $skip{$_} } keys %{ $self->{'header'} };
-	return scalar @h;
-}
-
-sub get_predictors {
-	my ( $self, %args ) = @_;
-	my $i = $args{'row'};
-	my @cols = @{ $args{'cols'} } if $args{'cols'};
-	
-	# build hash of indices to skip
-	my $dep = $self->{'dependent'};
-	my $dep_idx = $self->{'header'}->{$dep};
-	my %skip = map { $self->{'header'}->{$_} => 1 } @{ $self->{'skip'} };
-	$skip{$dep_idx} = 1;
-	
-	# build hash of indices to keep
-	my %keep = map { $self->{'header'}->{$_} => 1 } @cols;
-	
-	# only return a single row
-	if ( defined $i ) {
-		my @pred;
-		for my $j ( 0 .. $#{ $self->{'table'}->[$i] } ) {
-			if ( %keep ) {
-				push @pred, $self->{'table'}->[$i]->[$j] if $keep{$j};
-			}
-			else {
-				push @pred, $self->{'table'}->[$i]->[$j] unless $skip{$j};
-			}
-		}
-		return @pred;
-	}
-	else {
-		my @preds;
-		my $max = $self->{'size'} - 1;
-		for my $j ( 0 .. $max ) {
-			push @preds, [ $self->get_predictors( 'row' => $j, 'cols' => \@cols) ];
-		}
-		return @preds;
-	}
-}
-
-sub get_dependent {
-	my ( $self, $i ) = @_;
-	if ( defined $i ) {
-		my $dc  = $self->{'header'}->{ $self->{'dependent'} };
-		my $off = $self->{'offset'};
-		return $self->{'table'}->[ $i + $off ]->[ $dc ];
-	}
-	else {
-		my $dc   = $self->{'header'}->{ $self->{'dependent'} };
-		my $off  = $self->{'offset'};
-		my $max  = $self->{'size'} - ( 1 + $off );
-		my @dep  = map { $self->{'table'}->[ $_ + $off ]->[ $dc ] } 0 .. $max;
-		return @dep;
-	}
 }
 
 1;
