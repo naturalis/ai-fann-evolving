@@ -26,7 +26,6 @@ if ( -e $ARGV[0] ) {
 # process command line arguments
 GetOptions(
 	'verbose+'     => \$verbosity,
-	'conf=s'       => \$conf,
 	'initialize=s' => \%initialize,
 	'data=s'       => \%data,
 	'experiment=s' => \%experiment,
