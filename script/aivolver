@@ -39,8 +39,7 @@ my $testdata  = AI::FANN::Evolving::TrainData->new( 'file' => $data{test}  );
 # create the experiment
 my $exp = AI::FANN::Evolving::Experiment->new( 
 	'traindata' => $traindata,
-	'env'       => $testdata,	
-	'factory'   => AI::FANN::Evolving::Factory->new,
+	'env'       => $testdata,
 	%experiment,
 );
 
