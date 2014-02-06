@@ -7,11 +7,11 @@ use AI::FANN::Evolving;
 use YAML::Any 'LoadFile';
 use Algorithm::Genetic::Diploid::Logger ':levels';
 
-# process command line arguments
+# initialize config variables
 my $verbosity = WARN; # log level
-my %initialize; # settings to start the population
-my %data; # train and test data
-my %experiment; # experiment settings
+my %initialize;       # settings to start the population
+my %data;             # train and test data files
+my %experiment;       # experiment settings
 
 # first argument is a config file
 if ( -e $ARGV[0] ) {
@@ -32,8 +32,8 @@ GetOptions(
 );
 
 # XXX not yet implemented! read input data
-my $traindata = AI::FANN::Evolving::TrainData->new( 'file' => $data{train} );
-my $testdata  = AI::FANN::Evolving::TrainData->new( 'file' => $data{test}  );
+my $traindata = AI::FANN::Evolving::TrainData->new( 'file' => $data{'train'} );
+my $testdata  = AI::FANN::Evolving::TrainData->new( 'file' => $data{'test'}  );
 
 # create the experiment
 my $exp = AI::FANN::Evolving::Experiment->new( 
