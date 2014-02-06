@@ -1,9 +1,10 @@
 package AI::FANN::Evolving::Experiment;
 use strict;
 use warnings;
-use Algorithm::Genetic::Diploid;
 use AI::FANN ':all';
+use AI::FANN::Evolving;
 use File::Temp 'tempfile';
+use Algorithm::Genetic::Diploid;
 use base 'Algorithm::Genetic::Diploid::Experiment';
 
 my $log = __PACKAGE__->logger;
@@ -15,6 +16,14 @@ AI::FANN::Evolving::Experiment - an experiment in evolving artificial intelligen
 =head1 METHODS
 
 =over
+
+=item new
+
+Constructor takes named arguments, sets default factory to L<AI::FANN::Evolving::Factory>
+
+=cut
+
+sub new { shift->SUPER::new( 'factory' => AI::FANN::Evolving::Factory->new, @_ ) }
 
 =item workdir
 
