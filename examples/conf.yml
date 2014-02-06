@@ -1,5 +1,5 @@
 ---
-verbosity: 2 # logging level, 0 => 4 FATAL..DEBUG
+verbosity: 2 # logging level, 0..4 => FATAL..DEBUG
 experiment:
   crossover_rate: 0.3 # p of exchange between chromosomes
   mutation_rate: 0.1 # p of a trait mutating
