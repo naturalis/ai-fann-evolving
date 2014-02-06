@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use POD::Usage;
+use Pod::Usage;
 use Getopt::Long;
 use AI::FANN::Evolving;
 use YAML::Any 'LoadFile';
