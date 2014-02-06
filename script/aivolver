@@ -17,10 +17,10 @@ my %experiment; # experiment settings
 if ( -e $ARGV[0] ) {
 	my $conf = shift;
 	my $yaml = LoadFile($conf);
-	$verbosity  = $yaml->{verbosity}       if defined $yaml->{verbosity};
-	%initialize = %{ $yaml->{initialize} } if defined $yaml->{initialize};
-	%data       = %{ $yaml->{data} }       if defined $yaml->{data};
-	%experiment = %{ $yaml->{experiment} } if defined $yaml->{experiment};
+	$verbosity  = $yaml->{'verbosity'}       if defined $yaml->{'verbosity'};
+	%initialize = %{ $yaml->{'initialize'} } if defined $yaml->{'initialize'};
+	%data       = %{ $yaml->{'data'} }       if defined $yaml->{'data'};
+	%experiment = %{ $yaml->{'experiment'} } if defined $yaml->{'experiment'};
 }
 
 # process command line arguments
