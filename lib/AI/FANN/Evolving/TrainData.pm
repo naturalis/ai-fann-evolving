@@ -4,6 +4,21 @@ use Algorithm::Genetic::Diploid::Logger;
 
 my $log = Algorithm::Genetic::Diploid::Logger->new;
 
+=head1 NAME
+
+AI::FANN::Evolving::TrainData - wrapper class for FANN data
+
+=head1 METHODS
+
+=over
+
+=item new
+
+Constructor takes named arguments. By default, ignores column
+named ID and considers column named CLASS as classifier.
+
+=cut
+
 sub new {
 	my $class = shift;
 	my %args  = @_;
@@ -89,6 +104,12 @@ sub predictor_data {
 	}
 }
 
+=item dependent_data
+
+Getter for dependent (classifier) data
+
+=cut
+
 sub dependent_data {
 	my ( $self, $i ) = @_;
 	my @dc = map { $self->{'header'}->{$_} } $self->dependent_columns;
@@ -104,17 +125,11 @@ sub dependent_data {
 	}
 }
 
-sub to_fann {
-	my $self = shift;
-	my @cols = @_ ? @_ : $self->predictor_columns;
-	my @deps = $self->dependent_data;
-	my @pred = $self->predictor_data( 'cols' => \@cols );
-	my @interdigitated;
-	for my $i ( 0 .. $#deps ) {
-		push @interdigitated, $pred[$i], $deps[$i];
-	}
-	return AI::FANN::TrainData->new(@interdigitated);
-}
+=item read_data
+
+Reads provided input file
+
+=cut
 
 sub read_data {
 	my ( $self, $file ) = @_; # file is tab-delimited
@@ -136,6 +151,12 @@ sub read_data {
 	$self->{'size'}   = scalar @table;
 	return $self;
 }
+
+=item write_data
+
+Writes to provided output file
+
+=cut
 
 sub write_data {
 	my ( $self, $file ) = @_;
@@ -163,6 +184,12 @@ sub write_data {
 	}
 }
 
+=item trim_data
+
+Trims sparse rows with missing values
+
+=cut
+
 sub trim_data {
 	my $self = shift;
 	my @trimmed;
@@ -175,5 +202,27 @@ sub trim_data {
 	$self->{'size'}  = scalar @trimmed;
 	$self->{'table'} = \@trimmed;
 }
+
+=item to_fann
+
+Packs data into an L<AI::FANN> TrainData structure
+
+=cut
+
+sub to_fann {
+	my $self = shift;
+	my @cols = @_ ? @_ : $self->predictor_columns;
+	my @deps = $self->dependent_data;
+	my @pred = $self->predictor_data( 'cols' => \@cols );
+	my @interdigitated;
+	for my $i ( 0 .. $#deps ) {
+		push @interdigitated, $pred[$i], $deps[$i];
+	}
+	return AI::FANN::TrainData->new(@interdigitated);
+}
+
+=back
+
+=cut
 
 1;
