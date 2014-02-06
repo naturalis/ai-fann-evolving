@@ -2,6 +2,7 @@ package AI::FANN::Evolving::Gene;
 use strict;
 use warnings;
 use List::Util 'shuffle';
+use File::Temp 'tempfile';
 use Scalar::Util 'refaddr';
 use AI::FANN::Evolving;
 use Algorithm::Genetic::Diploid::Gene;
@@ -43,8 +44,16 @@ Getter/setter for an L<AI::FANN::Evolving> ANN
 
 sub ann {
 	my $self = shift;
-	$self->{'ann'} = shift if @_;
-	return $self->{'ann'};
+	if ( @_ ) {
+		my $ann = shift;
+		my ( $fh, $ann_file ) = tempfile( 'DIR' => $self->experiment->workdir );
+		$ann->save($ann_file);
+		$self->{'ann'} = $ann_file;
+		return $ann;
+	}
+	if ( -e $self->{'ann'} ) {
+		return AI::FANN::Evolving->new( 'file' => $self->{'ann'} );
+	}
 }
 
 =item make_function
@@ -117,9 +126,11 @@ sub mutate {
 	my $mu = $self->experiment->mutation_rate;
 
 	# make a clone, which we might mutate further
-	my $ann_clone = $self->ann->clone;
+	my $ann = $self->ann;
+	my $ann_clone = $ann->clone;
 	$self = $self->clone;
 	$self->ann( $ann_clone );
+	$log->debug("cloned ANN $ann => $ann_clone");
 	
 	# properties of ann we might mutate
 	# XXX equally do this for discrete properties?
@@ -127,7 +138,6 @@ sub mutate {
 	
 		# mutate by a value <= $mu
 		my $change = rand($mu);
-		$log->debug("going to mutate $prop by $change");
 		my $propval  = $ann_clone->$prop;
 		$propval = $mu if $propval == 0;
 		my $npropval = $propval + ( $propval * $change - $propval * $mu / 2 );
@@ -135,8 +145,11 @@ sub mutate {
 		# we don't want the sign to change, e.g. a change from 0.01 to -0.01 might
 		# have unforeseen effects, so flip the sign if we cross zero.
 		$npropval *= -1 if $propval < 0 xor $npropval < 0;
+		$log->debug("going to mutate $prop $propval => $npropval");
 		$ann_clone->$prop( $npropval );
 	}
+	my $data = $self->experiment->traindata;
+	$log->debug("going to re-train using $data");
 	$ann_clone->train( $self->experiment->traindata );
 	return $self;
 }

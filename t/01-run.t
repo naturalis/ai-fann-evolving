@@ -2,7 +2,6 @@ use Test::More 'no_plan';
 use strict;
 use File::Temp 'tempdir';
 use AI::FANN::Evolving;
-use Algorithm::Genetic::Diploid::Logger ':levels';
 
 # instantiate factory
 my $fac = AI::FANN::Evolving::Factory->new;
@@ -23,13 +22,13 @@ my $exp = $fac->create_experiment(
 	'traindata' => $xor_train,
 	'factory'   => $fac,
 	'env'       => $xor_train,
+	'mutation_rate' => 0.1,
+	'ngens'         => 10,
 );
 ok( $exp->isa('Algorithm::Genetic::Diploid::Experiment') );
 
 # initialize the experiment
 ok( $exp->initialize );
-
-$exp->logger->level( 'level' => INFO );
 
 # run!
 $exp->run();

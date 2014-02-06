@@ -75,8 +75,8 @@ sub _init {
 		'error'               => $args{'error'}               || 0.0001,
 		'epochs'              => $args{'epochs'}              || 5000,		
 		'train_type'          => $args{'train_type'}          || 'ordinary',		
-		'epoch_printfreq'     => $args{'epoch_printfreq'}     || 1000,
-		'neuron_printfreq'    => $args{'neuron_printfreq'}    || 10,
+		'epoch_printfreq'     => $args{'epoch_printfreq'}     || 0,
+		'neuron_printfreq'    => $args{'neuron_printfreq'}    || 0,
 		'neurons'             => $args{'neurons'}             || 15,
 		'activation_function' => $args{'activation_function'} || FANN_SIGMOID_SYMMETRIC,		
 	};	
@@ -98,7 +98,7 @@ from that file
 
 sub clone {
 	my $self = shift;
-	my ( $fh, $name ) = tempfile();
+	my ( $fh, $name ) = tempfile( 'DIR' => AI::FANN::Evolving::Experiment->new->workdir );
 	$self->save($name);
 	my $clone = __PACKAGE__->new( 'file' => $name );
 	unlink $name;
