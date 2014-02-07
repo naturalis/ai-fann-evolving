@@ -129,7 +129,6 @@ sub mutate {
 	my $ann = $self->ann;
 	my $ann_clone = $ann->clone;
 	$self = $self->clone;
-	$self->ann( $ann_clone );
 	$log->debug("cloned ANN $ann => $ann_clone");
 	
 	# properties of ann we might mutate
@@ -151,6 +150,7 @@ sub mutate {
 	my $data = $self->experiment->traindata;
 	$log->debug("going to re-train using $data");
 	$ann_clone->train( $self->experiment->traindata );
+	$self->ann( $ann_clone );
 	return $self;
 }
 
