@@ -1,8 +1,11 @@
 package AI::FANN::Evolving::TrainData;
 use strict;
-use Algorithm::Genetic::Diploid::Logger;
+use AI::FANN ':all';
+use Algorithm::Genetic::Diploid::Base;
+use base 'Algorithm::Genetic::Diploid::Base';
 
-my $log = Algorithm::Genetic::Diploid::Logger->new;
+our $AUTOLOAD;
+my $log = __PACKAGE__->logger;
 
 =head1 NAME
 
@@ -20,15 +23,14 @@ named ID and considers column named CLASS as classifier.
 =cut
 
 sub new {
-	my $class = shift;
-	my %args  = @_;
-	my $self  = {
-		'ignore'    => $args{'ignore'}    || [ 'ID' ],
-		'dependent' => $args{'dependent'} || [ 'CLASS' ],
+	my $self = shift->SUPER::new(
+		'ignore'    => [ 'ID'    ],
+		'dependent' => [ 'CLASS' ],
 		'header'    => {},
 		'table'     => [],
-	};
-	bless $self, $class;
+		@_
+	);
+	my %args  = @_;
 	$self->read_data($args{'file'}) if $args{'file'};
 	$self->trim_data if $args{'trim'};
 	return $self;
@@ -202,6 +204,72 @@ sub trim_data {
 	$self->{'size'}  = scalar @trimmed;
 	$self->{'table'} = \@trimmed;
 }
+
+=item partition_data
+
+Creates two clones that partition the data according to the provided ratio.
+
+=cut
+
+sub partition_data {
+	my $self   = shift;
+	my $sample = shift || 0.5;
+	my $clone1 = $self->clone;
+	my $clone2 = $self->clone;
+	my $remain = 1 - $sample;
+	$log->info("going to partition into $sample : $remain");
+		
+	# compute number of different dependent patterns and ratios of each
+	my @dependents = $self->dependent_data;
+	my %seen;
+	for my $dep ( @dependents ) {
+		my $key = join '/', @{ $dep };
+		$seen{$key}++;
+	}
+	
+	# adjust counts to sample size
+	for my $key ( keys %seen ) {
+		$log->debug("counts: $key => $seen{$key}");
+		$seen{$key} = int( $seen{$key} * $sample );
+		$log->debug("rescaled: $key => $seen{$key}");
+	}
+
+	# start the sampling	
+	my @dc = map { $self->{'header'}->{$_} } $self->dependent_columns;
+	my @new_table; # we will populate this
+	my @table = @{ $clone1->{'table'} }; # work on cloned instance
+	
+	# as long as there is still sampling to do 
+	SAMPLE: while( grep { !!$_ } values %seen ) {
+		for my $i ( 0 .. $#table ) {
+			my @r = @{ $table[$i] };
+			my $key = join '/', @r[@dc];
+			if ( $seen{$key} ) {
+				my $rand = rand(1);
+				if ( $rand < $sample ) {
+					push @new_table, \@r;
+					splice @table, $i, 1;
+					$seen{$key}--;
+					$log->debug("still to go for $key: $seen{$key}");
+					next SAMPLE;
+				}
+			}
+		}
+	}
+	$clone2->{'table'} = \@new_table;
+	$clone1->{'table'} = \@table;
+	$clone2->{'size'}  = scalar @new_table;
+	$clone1->{'size'}  = scalar @table;
+	return $clone2, $clone1;
+}
+
+=item size
+
+Returns the number of data records
+
+=cut
+
+sub size { shift->{'size'} }
 
 =item to_fann
 
