@@ -9,6 +9,7 @@ my %defaults = (
 	'experiment' => 'AI::FANN::Evolving::Experiment',
 	'chromosome' => 'AI::FANN::Evolving::Chromosome',
 	'gene'       => 'AI::FANN::Evolving::Gene',
+	'traindata'  => 'AI::FANN::Evolving::TrainData',
 );
 
 =head1 NAME
