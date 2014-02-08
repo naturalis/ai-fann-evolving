@@ -88,7 +88,7 @@ sub make_function {
 			
 			# iterate over the observed and expected values
 			for my $j ( 0 .. $#{ $expected } ) {
-				$fitness += abs( $observed->[$j] - $expected->[$j] );				
+				$fitness += abs( $observed->[$j] - $expected->[$j] );	
 			}
 		}
 		
@@ -127,8 +127,8 @@ sub mutate {
 
 	# make a clone, which we might mutate further
 	my $ann = $self->ann;
-	my $ann_clone = $ann->clone;
-	$self = $self->clone;
+	my $ann_clone  = $ann->clone;
+	my $self_clone = $self->clone;
 	$log->debug("cloned ANN $ann => $ann_clone");
 	
 	# properties of ann we might mutate
@@ -150,8 +150,8 @@ sub mutate {
 	my $data = $self->experiment->traindata;
 	$log->debug("going to re-train using $data");
 	$ann_clone->train( $self->experiment->traindata );
-	$self->ann( $ann_clone );
-	return $self;
+	$self_clone->ann( $ann_clone );
+	return $self_clone;
 }
 
 1;
