@@ -43,10 +43,16 @@ $log->level( 'level' => $verbosity );
 my $traindata = AI::FANN::Evolving::TrainData->new( 'file' => $data{'train'} );
 my $testdata  = AI::FANN::Evolving::TrainData->new( 'file' => $data{'test'}  );
 
+# create first work dir
+my $wd  = delete $experiment{'workdir'}; 
+$wd .= '/0';
+mkdir $wd;
+
 # create the experiment
 my $exp = AI::FANN::Evolving::Experiment->new( 
 	'traindata' => $traindata->to_fann,
 	'env'       => $testdata->to_fann,
+	'workdir'   => $wd,
 	%experiment,
 );
 
