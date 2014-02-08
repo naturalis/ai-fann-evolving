@@ -57,6 +57,36 @@ sub traindata {
 	return $self->{'traindata'};
 }
 
+=item run
+
+Runs the experiment!
+
+=cut
+
+sub run {
+	my $self = shift;
+	my $log = $self->logger;
+	
+	$log->info("going to run experiment");
+	my @results;
+	for my $i ( 1 .. $self->ngens ) {
+	
+		# modify workdir
+		my $wd = $self->{'workdir'};
+		$wd =~ s/\d+$/$i/;
+		$self->{'workdir'} = $wd;
+		mkdir $wd;
+		
+		my $optimum = $self->optimum($i);
+		
+		$log->debug("optimum at generation $i is $optimum");
+		my ( $fittest, $fitness ) = $self->population->turnover($i,$self->env,$optimum);
+		push @results, [ $fittest, $fitness ];
+	}
+	my ( $fittest, $fitness ) = map { @{ $_ } } sort { $a->[1] <=> $b->[1] } @results;
+	return $fittest, $fitness;
+}
+
 =item optimum
 
 The optimal fitness is zero error in the ANN's classification. This method returns 
