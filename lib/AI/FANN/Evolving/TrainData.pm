@@ -100,7 +100,7 @@ sub predictor_data {
 		my @preds;
 		my $max = $self->{'size'} - 1;
 		for my $j ( 0 .. $max ) {
-			push @preds, [ $self->predictor_data( 'row' => $j, 'cols' => \@cols) ];
+			push @preds, $self->predictor_data( 'row' => $j, 'cols' => \@cols);
 		}
 		return @preds;
 	}
