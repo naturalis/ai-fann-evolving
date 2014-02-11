@@ -10,7 +10,7 @@ use AI::FANN::Evolving::Factory;
 use Algorithm::Genetic::Diploid;
 use base 'AI::FANN';
 
-our $VERSION = '0.2';
+our $VERSION = '0.3';
 my $log = Algorithm::Genetic::Diploid->logger;
 my %self;
 
