@@ -7,7 +7,7 @@ WriteMakefile(
 	'NAME'          => 'AI::FANN::Evolving',
 	'ABSTRACT_FROM' => 'lib/AI/FANN/Evolving.pm',
 	'VERSION_FROM'  => 'lib/AI/FANN/Evolving.pm',
-	'EXE_FILES'     => 'script/aivolver',
+	'EXE_FILES'     => [ 'script/aivolver' ],
 	'AUTHOR'        => 'Rutger Vos <rutger.vos@naturalis.nl>',
 	'PREREQ_PM'     => { 	
 		'AI::FANN' => 0,
