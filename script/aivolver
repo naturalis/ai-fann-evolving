@@ -72,6 +72,8 @@ $log->info("best fitness: $fitness");
 my ($gene) = sort { $a->fitness <=> $b->fitness } map { $_->genes } $fittest->chromosomes;
 $gene->ann->save($outfile);
 
+__END__
+
 =pod
 
 =head1 NAME
