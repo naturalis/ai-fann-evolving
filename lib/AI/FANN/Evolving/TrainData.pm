@@ -139,6 +139,7 @@ sub read_data {
 	my ( %header, @table );
 	while(<$fh>) {
 		chomp;
+		next if /^\s*$/;
 		my @fields = split /\t/, $_;
 		if ( not %header ) {
 			my $i = 0;
