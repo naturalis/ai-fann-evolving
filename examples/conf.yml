@@ -4,7 +4,7 @@ outfile: fittest.ann # best ANN, location relative to CWD
 experiment:
   crossover_rate: 0.6 # p of exchange between chromosomes
   mutation_rate: 0.2 # p of a trait mutating
-  ngens: 100 # number of generations
+  ngens: 10 # number of generations
   reproduction_rate: 0.35 # proportion of population contributing to next generation
   workdir: tmp # temporary directory
 data:
