@@ -10,6 +10,7 @@ experiment:
 data:
   train: bb_train.tsv # input data as TSV, location relative to CWD
   test: bb_test.tsv # test data as TSV, location relative to CWD
+  dependent: [ OUT.1, OUT.2, OUT.3, OUT.4 ]
 initialize: 
   individual_count: 50 # number of individuals in population
   chromosome_count: 1 # number of non-homologous chromosomes (i.e. n for diploid org)
