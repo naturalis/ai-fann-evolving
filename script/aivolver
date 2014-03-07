@@ -47,7 +47,7 @@ my $log = Algorithm::Genetic::Diploid::Logger->new;
 $log->level( 'level' => $verbosity );
 
 # read input data
-my $traindata = AI::FANN::Evolving::TrainData->new( 'file' => $data{'train'} );
+my $traindata = AI::FANN::Evolving::TrainData->new( 'file' => $data{'train'}, 'dependent' => $data{'dependent'} );
 my $testdata  = AI::FANN::Evolving::TrainData->new( 'file' => $data{'test'}  );
 
 # create first work dir
