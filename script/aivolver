@@ -4,6 +4,7 @@ use warnings;
 use Pod::Usage;
 use Getopt::Long;
 use YAML::Any 'LoadFile';
+use File::Path 'make_path';
 use AI::FANN::Evolving;
 use AI::FANN::Evolving::TrainData;
 use Algorithm::Genetic::Diploid::Logger ':levels';
@@ -47,13 +48,22 @@ my $log = Algorithm::Genetic::Diploid::Logger->new;
 $log->level( 'level' => $verbosity );
 
 # read input data
-my $traindata = AI::FANN::Evolving::TrainData->new( 'file' => $data{'train'}, 'dependent' => $data{'dependent'} );
-my $testdata  = AI::FANN::Evolving::TrainData->new( 'file' => $data{'test'}  );
+my $deps = join ', ', @{ $data{'dependent'} };
+$log->info("going to read train data $data{train}, dependent columns are $deps");
+my $traindata = AI::FANN::Evolving::TrainData->new( 
+	'file'      => $data{'train'}, 
+	'dependent' => $data{'dependent'}, 
+);
+$log->info("going to read test data $data{test}, dependent columns are $deps");
+my $testdata  = AI::FANN::Evolving::TrainData->new( 
+	'file'      => $data{'test'},
+	'dependent' => $data{'dependent'},
+);
 
 # create first work dir
 my $wd  = delete $experiment{'workdir'}; 
 $wd .= '/0';
-mkdir $wd;
+make_path( $wd );
 
 # create the experiment
 my $exp = AI::FANN::Evolving::Experiment->new( 

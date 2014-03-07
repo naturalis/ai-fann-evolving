@@ -1,5 +1,5 @@
 ---
-verbosity: 2 # logging level, 0..4 => FATAL..DEBUG
+verbosity: 3 # logging level, 0..4 => FATAL..DEBUG
 outfile: fittest.ann # best ANN, location relative to CWD
 experiment:
   crossover_rate: 0.6 # p of exchange between chromosomes
@@ -8,8 +8,8 @@ experiment:
   reproduction_rate: 0.35 # proportion of population contributing to next generation
   workdir: tmp # temporary directory
 data:
-  train: bb_train.tsv # input data as TSV, location relative to CWD
-  test: bb_test.tsv # test data as TSV, location relative to CWD
+  train: train.tsv # input data as TSV, location relative to CWD
+  test: test.tsv # test data as TSV, location relative to CWD
   dependent: [ OUT.1, OUT.2, OUT.3, OUT.4 ]
 initialize: 
   individual_count: 50 # number of individuals in population
