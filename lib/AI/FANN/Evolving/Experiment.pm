@@ -36,8 +36,12 @@ needs to be minimized.
 sub workdir {
 	my $self = shift;
 	if ( @_ ) {
-		$log->info("assigning new workdir: @_");
-		$self->{'workdir'} = shift;
+		my $value = shift;
+		$log->info("assigning new workdir $value");
+		$self->{'workdir'} = $value;
+	}
+	else {
+		$log->debug("retrieving workdir");
 	}
 	return $self->{'workdir'};
 }
@@ -51,8 +55,12 @@ Getter/setter for the L<AI::FANN::TrainData> object.
 sub traindata {
 	my $self = shift;
 	if ( @_ ) {
-		$log->info("assigning new traindata: @_");
-		$self->{'traindata'} = shift;
+		my $value = shift;
+		$log->info("assigning new traindata $value");
+		$self->{'traindata'} = $value;
+	}
+	else {
+		$log->debug("retrieving traindata");
 	}
 	return $self->{'traindata'};
 }
