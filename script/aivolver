@@ -15,6 +15,7 @@ my $formatter = 'simple'; # log formatter
 my %initialize;       # settings to start the population
 my %data;             # train and test data files
 my %experiment;       # experiment settings
+my %ann;              # ANN settings
 my $outfile;
 
 # there are no arguments
@@ -32,6 +33,7 @@ if ( -e $ARGV[0] ) {
 	%initialize = %{ $yaml->{'initialize'} } if defined $yaml->{'initialize'};
 	%data       = %{ $yaml->{'data'} }       if defined $yaml->{'data'};
 	%experiment = %{ $yaml->{'experiment'} } if defined $yaml->{'experiment'};
+	%ann        = %{ $yaml->{'ann'} }        if defined $yaml->{'ann'};
 }
 
 # process command line arguments
@@ -42,9 +44,13 @@ GetOptions(
 	'initialize=s' => \%initialize,
 	'data=s'       => \%data,
 	'experiment=s' => \%experiment,
+	'ann=s'        => \%ann,
 	'help|?'       => sub { pod2usage( '-verbose' => 1 ) },
 	'manual'       => sub { pod2usage( '-verbose' => 2 ) },
 );
+
+# configure ANN
+AI::FANN::Evolving->defaults(%ann);
 
 # configure logger
 my $log = Algorithm::Genetic::Diploid::Logger->new;
@@ -52,17 +58,17 @@ $log->level( 'level' => $verbosity );
 $log->formatter( $formatter );
 
 # read input data
-my $deps = join ', ', @{ $data{'dependent'} };
-$log->info("going to read train data $data{train}, dependent columns are $deps");
-my $traindata = AI::FANN::Evolving::TrainData->new( 
-	'file'      => $data{'train'}, 
+my $deps   = join ', ', @{ $data{'dependent'} };
+my $ignore = join ', ', @{ $data{'ignore'} };
+$log->info("going to read train data $data{file}, ignoring '$ignore', dependent columns are '$deps'");
+my $inputdata = AI::FANN::Evolving::TrainData->new( 
+	'file'      => $data{'file'}, 
 	'dependent' => $data{'dependent'}, 
+	'ignore'    => $data{'ignore'},
 );
-$log->info("going to read test data $data{test}, dependent columns are $deps");
-my $testdata  = AI::FANN::Evolving::TrainData->new( 
-	'file'      => $data{'test'},
-	'dependent' => $data{'dependent'},
-);
+my ( $traindata, $testdata ) = $inputdata->partition_data( $data{'partition'} );
+$log->info("number of training data records: ".$traindata->size);
+$log->info("number of test data records: ".$testdata->size);
 
 # create first work dir
 my $wd  = delete $experiment{'workdir'}; 
@@ -101,6 +107,8 @@ aivolver - Evolves optimal artificial neural networks
 
 =head1 OPTIONS AND ARGUMENTS
 
+B<***NO LONGER ACCURATE, CONSULT THE YAML CONFIG FILES***>
+
 =over
 
 =item B<<config.ymlE<gt>>
@@ -135,13 +143,13 @@ that defines the location of one of the data files. The key/value pairs are as f
 
 =over
 
-=item B<train=<data.tsvE<gt>>
+=item B<file=<data.tsvE<gt>>
 
-Defines the location of a file of training data.
+Defines the location of a file of input data.
 
-=item B<test=<data.tsvE<gt>>
+=item B<fraction=<numberE<gt>>
 
-Defines the location of a file of test ("out of sample") data.
+Fraction of input data to use for training (versus testing).
 
 =back 
 
