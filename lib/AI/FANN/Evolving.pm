@@ -1,5 +1,6 @@
 package AI::FANN::Evolving;
 use strict;
+use warnings;
 use AI::FANN ':all';
 use File::Temp 'tempfile';
 use Scalar::Util 'refaddr';
@@ -8,10 +9,11 @@ use AI::FANN::Evolving::Chromosome;
 use AI::FANN::Evolving::Experiment;
 use AI::FANN::Evolving::Factory;
 use Algorithm::Genetic::Diploid;
+use Algorithm::Genetic::Diploid::Logger;
 use base 'AI::FANN';
 
 our $VERSION = '0.3';
-my $log = Algorithm::Genetic::Diploid->logger;
+my $log = Algorithm::Genetic::Diploid::Logger->new;
 my %self;
 
 =head1 NAME
@@ -36,11 +38,13 @@ sub new {
 	# de-serialize from a file
 	if ( my $file = $args{'file'} ) {
 		my $self = $class->new_from_file($file);
+		$log->debug("instantiating from file $file");
 		return $self->_init(%args);
 	}
 	
 	# build new topology
 	elsif ( my $data = $args{'data'} ) {
+		$log->debug("instantiating from data $data");
 		my $neurons = $args{'neurons'} || ( $data->num_inputs + 1 );
 		my @sizes = ( 
 			$data->num_inputs, 
@@ -98,7 +102,8 @@ from that file
 
 sub clone {
 	my $self = shift;
-	my ( $fh, $name ) = tempfile( 'DIR' => AI::FANN::Evolving::Experiment->new->workdir );
+	$log->debug("cloning...");
+	my ( $fh, $name ) = tempfile();
 	$self->save($name);
 	my $clone = __PACKAGE__->new( 'file' => $name );
 	unlink $name;
@@ -114,6 +119,7 @@ Trains the AI on the provided data object
 sub train {
 	my ( $self, $data ) = @_;
 	if ( $self->train_type eq 'cascade' ) {
+		$log->debug("cascade training");
 	
 		# set learning curve
 		$self->cascade_activation_functions( $self->activation_function );
@@ -127,6 +133,7 @@ sub train {
 		);
 	}
 	else {
+		$log->debug("normal training");
 	
 		# set learning curves
 		$self->hidden_activation_function( $self->activation_function );
@@ -186,7 +193,14 @@ Getter/setter for the error rate. Default is 0.0001
 sub error {
 	my $ref = shift;
 	my $id = refaddr $ref;
-	$self{$id}->{'error'} = shift if @_;
+	if ( @_ ) {
+		my $value = shift;
+		$log->debug("setting error threshold to $value");
+		$self{$id}->{'error'} = $value;
+	}
+	else {
+		$log->debug("retrieving error threshold");
+	}
 	return $self{$id}->{'error'};
 }
 
@@ -199,7 +213,14 @@ Getter/setter for the number of training epochs, default is 500000
 sub epochs {
 	my $ref = shift;
 	my $id = refaddr $ref;
-	$self{$id}->{'epochs'} = shift if @_;
+	if ( @_ ) {
+		my $value = shift;
+		$log->debug("setting training epochs to $value");
+		$self{$id}->{'epochs'} = $value;
+	}
+	else {
+		$log->debug("retrieving training epochs");
+	}
 	return $self{$id}->{'epochs'};
 }
 
@@ -212,7 +233,14 @@ Getter/setter for the number of epochs after which progress is printed. default 
 sub epoch_printfreq {
 	my $ref = shift;
 	my $id = refaddr $ref;
-	$self{$id}->{'epoch_printfreq'} = shift if @_;
+	if ( @_ ) {
+		my $value = shift;
+		$log->debug("setting epoch printfreq to $value");
+		$self{$id}->{'epoch_printfreq'} = $value;
+	}
+	else {
+		$log->debug("retrieving epoch printfreq");
+	}
 	return $self{$id}->{'epoch_printfreq'};
 }
 
@@ -225,7 +253,14 @@ Getter/setter for the number of neurons. Default is 15
 sub neurons {
 	my $ref = shift;
 	my $id = refaddr $ref;
-	$self{$id}->{'neurons'} = shift if @_;
+	if ( @_ ) {
+		my $value = shift;
+		$log->debug("setting neurons to $value");
+		$self{$id}->{'neurons'} = $value;
+	}
+	else {
+		$log->debug("retrieving neurons");
+	}
 	return $self{$id}->{'neurons'};
 }
 
@@ -239,7 +274,14 @@ default is 10
 sub neuron_printfreq {
 	my $ref = shift;
 	my $id = refaddr $ref;
-	$self{$id}->{'neuron_printfreq'} = shift if @_;
+	if ( @_ ) {
+		my $value = shift;
+		$log->debug("setting neuron printfreq to $value");
+		$self{$id}->{'neuron_printfreq'} = $value;
+	}
+	else {	
+		$log->debug("retrieving neuron printfreq");
+	}
 	return $self{$id}->{'neuron_printfreq'};
 }
 
@@ -252,7 +294,14 @@ Getter/setter for the training type: 'cascade' or 'ordinary'. Default is ordinar
 sub train_type {
 	my $ref = shift;
 	my $id = refaddr $ref;
-	$self{$id}->{'train_type'} = lc shift if @_;
+	if ( @_ ) {
+		my $value = lc shift;
+		$log->debug("setting train type to $value"); 
+		$self{$id}->{'train_type'} = $value;
+	}
+	else {
+		$log->debug("retrieving train type");
+	}
 	return $self{$id}->{'train_type'};
 }
 
@@ -268,7 +317,14 @@ FANN_SIGMOID_SYMMETRIC
 sub activation_function {
 	my $ref = shift;
 	my $id = refaddr $ref;
-	$self{$id}->{'activation_function'} = shift if @_;
+	if ( @_ ) {
+		my $value = shift;
+		$log->debug("setting activation function to $value");
+		$self{$id}->{'activation_function'} = $value;
+	}
+	else {
+		$log->debug("retrieving activation function");
+	}
 	return $self{$id}->{'activation_function'};
 }
 
