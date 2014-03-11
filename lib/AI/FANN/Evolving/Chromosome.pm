@@ -24,12 +24,13 @@ Recombines properties of the AI during meiosis in proportion to the crossover_ra
 =cut
 
 sub recombine {
+	$log->debug("recombining chromosomes");
 	# get the genes and columns for the two chromosomes
 	my ( $chr1, $chr2 ) = @_;
 	my ( $gen1 ) = map { $_->mutate } $chr1->genes;
 	my ( $gen2 ) = map { $_->mutate } $chr2->genes;	
 	my ( $ann1, $ann2 ) = ( $gen1->ann, $gen2->ann );
-	my $exp = AI::FANN::Evolving::Experiment->new;
+	my $exp = $chr1->experiment;
 	
 	# XXX equally do this for discrete properties?
 	for my $prop ( AI::FANN::Evolving->continuous_properties ) {
