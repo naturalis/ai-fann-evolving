@@ -11,6 +11,7 @@ use Algorithm::Genetic::Diploid::Logger ':levels';
 
 # initialize config variables
 my $verbosity = WARN; # log level
+my $formatter = 'simple'; # log formatter
 my %initialize;       # settings to start the population
 my %data;             # train and test data files
 my %experiment;       # experiment settings
@@ -27,6 +28,7 @@ if ( -e $ARGV[0] ) {
 	my $yaml = LoadFile($conf);
 	$outfile    = $yaml->{'outfile'}         if defined $yaml->{'outfile'};
 	$verbosity  = $yaml->{'verbosity'}       if defined $yaml->{'verbosity'};
+	$formatter  = $yaml->{'formatter'}       if defined $yaml->{'formatter'};
 	%initialize = %{ $yaml->{'initialize'} } if defined $yaml->{'initialize'};
 	%data       = %{ $yaml->{'data'} }       if defined $yaml->{'data'};
 	%experiment = %{ $yaml->{'experiment'} } if defined $yaml->{'experiment'};
@@ -35,6 +37,7 @@ if ( -e $ARGV[0] ) {
 # process command line arguments
 GetOptions(
 	'verbose+'     => \$verbosity,
+	'formatter=s'  => \$formatter,
 	'outfile=s'    => \$outfile,
 	'initialize=s' => \%initialize,
 	'data=s'       => \%data,
@@ -46,6 +49,7 @@ GetOptions(
 # configure logger
 my $log = Algorithm::Genetic::Diploid::Logger->new;
 $log->level( 'level' => $verbosity );
+$log->formatter( $formatter );
 
 # read input data
 my $deps = join ', ', @{ $data{'dependent'} };
@@ -78,7 +82,7 @@ $exp->initialize(%initialize);
 
 # run!
 my ( $fittest, $fitness ) = $exp->run();
-$log->info("best fitness: $fitness");
+$log->info("*** overall best fitness: $fitness");
 my ($gene) = sort { $a->fitness <=> $b->fitness } map { $_->genes } $fittest->chromosomes;
 $gene->ann->save($outfile);
 
