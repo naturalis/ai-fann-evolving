@@ -1,10 +1,11 @@
 ---
 verbosity: 3 # logging level, 0..4 => FATAL..DEBUG
+formatter: simple # logging formatter, simple, medium or verbose
 outfile: fittest.ann # best ANN, location relative to CWD
 experiment:
   crossover_rate: 0.6 # p of exchange between chromosomes
   mutation_rate: 0.2 # p of a trait mutating
-  ngens: 10 # number of generations
+  ngens: 25 # number of generations
   reproduction_rate: 0.35 # proportion of population contributing to next generation
   workdir: tmp # temporary directory
 data:
