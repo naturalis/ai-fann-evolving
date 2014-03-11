@@ -71,19 +71,72 @@ sub new {
 	}
 }
 
+my %default = (
+	'error'               => 0.0001,
+	'epochs'              => 5000,
+	'train_type'          => 'ordinary',
+	'epoch_printfreq'     => 100,
+	'neuron_printfreq'    => 0,
+	'neurons'             => 15,
+	'activation_function' => FANN_SIGMOID_SYMMETRIC,
+);
+
+my %constant = (
+	# enum fann_train_enum
+	'FANN_TRAIN_INCREMENTAL' => FANN_TRAIN_INCREMENTAL,
+	'FANN_TRAIN_BATCH'       => FANN_TRAIN_BATCH,
+	'FANN_TRAIN_RPROP'       => FANN_TRAIN_RPROP,
+	'FANN_TRAIN_QUICKPROP'   => FANN_TRAIN_QUICKPROP,
+
+	# enum fann_activationfunc_enum
+	'FANN_LINEAR'                     => FANN_LINEAR,
+	'FANN_THRESHOLD'                  => FANN_THRESHOLD,
+	'FANN_THRESHOLD_SYMMETRIC'        => FANN_THRESHOLD_SYMMETRIC,
+	'FANN_SIGMOID'                    => FANN_SIGMOID,
+	'FANN_SIGMOID_STEPWISE'           => FANN_SIGMOID_STEPWISE,
+	'FANN_SIGMOID_SYMMETRIC'          => FANN_SIGMOID_SYMMETRIC,
+	'FANN_SIGMOID_SYMMETRIC_STEPWISE' => FANN_SIGMOID_SYMMETRIC_STEPWISE,
+	'FANN_GAUSSIAN'                   => FANN_GAUSSIAN,
+	'FANN_GAUSSIAN_SYMMETRIC'         => FANN_GAUSSIAN_SYMMETRIC,
+	'FANN_GAUSSIAN_STEPWISE'          => FANN_GAUSSIAN_STEPWISE,
+	'FANN_ELLIOT'                     => FANN_ELLIOT,
+	'FANN_ELLIOT_SYMMETRIC'           => FANN_ELLIOT_SYMMETRIC,
+	'FANN_LINEAR_PIECE'               => FANN_LINEAR_PIECE,
+	'FANN_LINEAR_PIECE_SYMMETRIC'     => FANN_LINEAR_PIECE_SYMMETRIC,
+	'FANN_SIN_SYMMETRIC'              => FANN_SIN_SYMMETRIC,
+	'FANN_COS_SYMMETRIC'              => FANN_COS_SYMMETRIC,
+	'FANN_SIN'                        => FANN_SIN,
+	'FANN_COS'                        => FANN_COS,
+
+	# enum fann_errorfunc_enum
+	'FANN_ERRORFUNC_LINEAR' => FANN_ERRORFUNC_LINEAR,
+	'FANN_ERRORFUNC_TANH'   => FANN_ERRORFUNC_TANH,
+
+	# enum fann_stopfunc_enum
+	'FANN_STOPFUNC_MSE' => FANN_STOPFUNC_MSE,
+	'FANN_STOPFUNC_BIT' => FANN_STOPFUNC_BIT,
+);
+
+sub defaults {
+	my $self = shift;
+	my %args = @_;
+	for my $key ( keys %args ) {
+		$log->info("setting $key to $args{$key}");
+		if ( $key eq 'activation_function' ) {
+			$args{$key} = $constant{$args{$key}};
+		}
+		$default{$key} = $args{$key};
+	}
+}
+
 sub _init {
 	my $self = shift;
 	my $id   = refaddr $self;
 	my %args = @_;
-	$self{$id} = {
-		'error'               => $args{'error'}               || 0.0001,
-		'epochs'              => $args{'epochs'}              || 5000,		
-		'train_type'          => $args{'train_type'}          || 'ordinary',		
-		'epoch_printfreq'     => $args{'epoch_printfreq'}     || 0,
-		'neuron_printfreq'    => $args{'neuron_printfreq'}    || 0,
-		'neurons'             => $args{'neurons'}             || 15,
-		'activation_function' => $args{'activation_function'} || FANN_SIGMOID_SYMMETRIC,		
-	};	
+	$self{$id} = {};
+	for ( qw(error epochs train_type epoch_printfreq neuron_printfreq neurons activation_function) ) {
+		$self{$id}->{$_} = $args{$_} // $default{$_};
+	}
 	return $self;
 }
 
