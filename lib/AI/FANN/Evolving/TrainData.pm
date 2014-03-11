@@ -135,6 +135,7 @@ Reads provided input file
 
 sub read_data {
 	my ( $self, $file ) = @_; # file is tab-delimited
+	$log->debug("reading data from file $file");
 	open my $fh, '<', $file or die "Can't open $file: $!";
 	my ( %header, @table );
 	while(<$fh>) {
@@ -279,6 +280,7 @@ Packs data into an L<AI::FANN> TrainData structure
 =cut
 
 sub to_fann {
+	$log->debug("encoding data as FANN struct");
 	my $self = shift;
 	my @cols = @_ ? @_ : $self->predictor_columns;
 	my @deps = $self->dependent_data;
