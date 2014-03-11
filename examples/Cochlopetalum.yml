@@ -1,0 +1,27 @@
+---
+verbosity: 3 # logging level, 0..4 => FATAL..DEBUG
+formatter: simple # logging formatter, simple, medium or verbose
+outfile: Cochlopetalum.ann # best ANN, location relative to CWD
+experiment:
+  crossover_rate: 0.3 # p of exchange between chromosomes
+  mutation_rate: 0.1 # p of a trait mutating
+  ngens: 5 # number of generations
+  reproduction_rate: 0.35 # proportion of population contributing to next generation
+  workdir: Cochlopetalum # temporary directory
+data:
+  file: Cochlopetalum.tsv # input data as TSV, location relative to CWD
+  fraction: 0.50 # amount of data to use for training
+  dependent: [ C1, C2, C3, C4, C5 ] # classification columns
+  ignore: [ image ] # uninformative columns to ignore, e.g. unique record identifiers
+initialize: 
+  individual_count: 5 # number of individuals in population
+  chromosome_count: 1 # number of non-homologous chromosomes (i.e. n for diploid org)
+  gene_count: 1 # number of genes per chromosome
+ann:
+  error: 0.0001 # ANN error threshold
+  epochs: 5000 # max number of epochs
+  train_type: ordinary # 'ordinary' or 'cascade'
+  epoch_printfreq: 100 # how often to print progress during 'ordinary'
+  neuron_printfreq: 1 # how often to print progress during 'cascade'
+  neurons: 15 # number of neurons
+  activation_function: FANN_SIGMOID_SYMMETRIC # constant identifier of funtion
