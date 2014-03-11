@@ -45,14 +45,22 @@ Getter/setter for an L<AI::FANN::Evolving> ANN
 sub ann {
 	my $self = shift;
 	if ( @_ ) {
+		$log->debug("assigning and serializing ANN");
 		my $ann = shift;
 		my ( $fh, $ann_file ) = tempfile( 'DIR' => $self->experiment->workdir );
 		$ann->save($ann_file);
 		$self->{'ann'} = $ann_file;
 		return $ann;
 	}
+	else {
+		$log->debug("retrieving ANN");
+	}
 	if ( -e $self->{'ann'} ) {
+		$log->debug("instantiating ANN from file");
 		return AI::FANN::Evolving->new( 'file' => $self->{'ann'} );
+	}
+	else {
+		$log->warn("ANN file doesn't exist");
 	}
 }
 
