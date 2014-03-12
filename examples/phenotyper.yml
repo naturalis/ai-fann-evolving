@@ -10,7 +10,7 @@ experiment:
   workdir: phenotyper # temporary directory
 data:
   file: phenotyper.tsv # input data as TSV, location relative to CWD
-  fraction: 0.50 # amount of data to use for training
+  partition: 0.50 # amount of data to use for training
   dependent: [ 	OUT.1, OUT.2, OUT.3, OUT.4 ] # classification columns
   ignore: [ ID ] # uninformative columns to ignore, e.g. unique record identifiers
 initialize: 
