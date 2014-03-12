@@ -94,11 +94,18 @@ sub make_function {
 			my ( $input, $expected ) = $env->data($i);
 			my $observed = $ann->run($input);
 			
-			# iterate over the observed and expected values
+			use Data::Dumper;
+			$log->debug("Observed: ".Dumper($observed));
+			$log->debug("Expected: ".Dumper($expected));
+			
+			# iterate over the observed and expected values. we take
+			# the sum of the squared differences. because the input
+			# range is -1..1 we increment by one so they're always positive.
 			for my $j ( 0 .. $#{ $expected } ) {
-				$fitness += abs( $observed->[$j] - $expected->[$j] );	
+				$fitness += ( ( (1+$observed->[$j]) - (1+$expected->[$j]) ) ** 2 );
 			}
 		}
+		$fitness /= $env->length;
 		
 		# store result
 		$self->{'fitness'} = $fitness;
@@ -157,7 +164,7 @@ sub mutate {
 	}
 	my $data = $self->experiment->traindata;
 	$log->debug("going to re-train using $data");
-	$ann_clone->train( $self->experiment->traindata );
+	$ann_clone->train( $data );
 	$self_clone->ann( $ann_clone );
 	return $self_clone;
 }
