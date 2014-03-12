@@ -212,7 +212,7 @@ can be mutated
 sub continuous_properties {
 	(
 		'learning_rate',
-#		'learning_momentum',
+		'learning_momentum',
 		'quickprop_decay',
 		'quickprop_mu',
 		'rprop_increase_factor',
@@ -234,7 +234,10 @@ can be mutated
 =cut
 
 sub discrete_properties {
-
+	(
+	
+	
+	);
 }
 
 =item error
