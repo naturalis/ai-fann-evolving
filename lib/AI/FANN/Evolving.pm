@@ -3,18 +3,16 @@ use strict;
 use warnings;
 use AI::FANN ':all';
 use File::Temp 'tempfile';
-use Scalar::Util 'refaddr';
 use AI::FANN::Evolving::Gene;
 use AI::FANN::Evolving::Chromosome;
 use AI::FANN::Evolving::Experiment;
 use AI::FANN::Evolving::Factory;
 use Algorithm::Genetic::Diploid;
-use Algorithm::Genetic::Diploid::Logger;
-use base 'AI::FANN';
+use base qw'Algorithm::Genetic::Diploid::Base';
 
 our $VERSION = '0.3';
-my $log = Algorithm::Genetic::Diploid::Logger->new;
-my %self;
+our $AUTOLOAD;
+my $log = __PACKAGE__->logger;
 
 =head1 NAME
 
@@ -34,17 +32,23 @@ Constructor requires 'file', or 'data' and 'neurons' arguments. Optionally takes
 sub new {
 	my $class = shift;
 	my %args  = @_;
+	my $self  = {};
+	bless $self, $class;
+	$self->_init(%args);
 	
 	# de-serialize from a file
 	if ( my $file = $args{'file'} ) {
-		my $self = $class->new_from_file($file);
+		$self->{'ann'} = AI::FANN->new_from_file($file);
 		$log->debug("instantiating from file $file");
-		return $self->_init(%args);
+		return $self;
 	}
 	
-	# build new topology
+	# build new topology from input data
 	elsif ( my $data = $args{'data'} ) {
 		$log->debug("instantiating from data $data");
+		$data = $data->to_fann if $data->isa('AI::FANN::Evolving::TrainData');
+		
+		# prepare arguments
 		my $neurons = $args{'neurons'} || ( $data->num_inputs + 1 );
 		my @sizes = ( 
 			$data->num_inputs, 
@@ -52,17 +56,15 @@ sub new {
 			$data->num_outputs
 		);
 		
-		# build sparse topology
-		my $self;
+		# build topology
 		if ( $args{'connection_rate'} ) {
-			$self = $class->new_sparse( $args{'connection_rate'}, @sizes );
+			$self->{'ann'} = AI::FANN->new_sparse( $args{'connection_rate'}, @sizes );
 		}
 		else {
-			$self = $class->new_standard( @sizes );
+			$self->{'ann'} = AI::FANN->new_standard( @sizes );
 		}
 		
 		# finalize the instance
-		$self->_init;
 		$self->train( $data );
 		return $self;
 	}
@@ -131,35 +133,42 @@ sub defaults {
 
 sub _init {
 	my $self = shift;
-	my $id   = refaddr $self;
 	my %args = @_;
-	$self{$id} = {};
 	for ( qw(error epochs train_type epoch_printfreq neuron_printfreq neurons activation_function) ) {
-		$self{$id}->{$_} = $args{$_} // $default{$_};
+		$self->{$_} = $args{$_} // $default{$_};
 	}
 	return $self;
 }
 
-sub DESTROY {
-	my $self = shift;
-	my $id   = refaddr $self;
-	delete $self{$id};	
-}
-
 =item clone
 
-Clones the ANN by serializing it to a temporary file and creating a new instance
-from that file
+Clones the object
 
 =cut
 
 sub clone {
 	my $self = shift;
 	$log->debug("cloning...");
-	my ( $fh, $name ) = tempfile();
-	$self->save($name);
-	my $clone = __PACKAGE__->new( 'file' => $name );
-	unlink $name;
+	
+	# we delete the reference here so we can use 
+	# Algorithm::Genetic::Diploid::Base's cloning method, which
+	# dumps and loads from YAML. This wouldn't work if the 
+	# reference is still attached because it cannot be 
+	# stringified, being an XS data structure
+	my $ann = delete $self->{'ann'};
+	my $clone = $self->SUPER::clone;
+	
+	# clone the ANN by writing it to a temp file in "FANN/FLO"
+	# format and reading that back in
+	my ( $fh, $file ) = tempfile();
+	close $fh;
+	$ann->save($file);
+	$clone->{'ann'} = __PACKAGE__->new_from_file($file);
+	unlink $file;
+	
+	# now re-attach the original ANN to the invocant
+	$self->{'ann'} = $ann;
+	
 	return $clone;
 }
 
@@ -178,7 +187,7 @@ sub train {
 		$self->cascade_activation_functions( $self->activation_function );
 		
 		# train
-		$self->cascadetrain_on_data(
+		$self->{'ann'}->cascadetrain_on_data(
 			$data,
 			$self->neurons,
 			$self->neuron_printfreq,
@@ -193,7 +202,7 @@ sub train {
 		$self->output_activation_function( $self->activation_function );
 		
 		# train
-		$self->train_on_data(
+		$self->{'ann'}->train_on_data(
 			$data,
 			$self->epochs,
 			$self->epoch_printfreq,
@@ -240,6 +249,17 @@ sub discrete_properties {
 	);
 }
 
+=item enum_properties
+
+Returns a hash whose keys are names of enums and values the possible states for the
+enum
+
+=cut
+
+sub enum_properties {
+
+}
+
 =item error
 
 Getter/setter for the error rate. Default is 0.0001
@@ -247,17 +267,16 @@ Getter/setter for the error rate. Default is 0.0001
 =cut
 
 sub error {
-	my $ref = shift;
-	my $id = refaddr $ref;
+	my $self = shift;
 	if ( @_ ) {
 		my $value = shift;
 		$log->debug("setting error threshold to $value");
-		$self{$id}->{'error'} = $value;
+		return $self->{'error'} = $value;
 	}
 	else {
-		$log->debug("retrieving error threshold");
+		$log->debug("getting error threshold");
+		return $self->{'error'};
 	}
-	return $self{$id}->{'error'};
 }
 
 =item epochs
@@ -267,17 +286,16 @@ Getter/setter for the number of training epochs, default is 500000
 =cut
 
 sub epochs {
-	my $ref = shift;
-	my $id = refaddr $ref;
+	my $self = shift;
 	if ( @_ ) {
 		my $value = shift;
 		$log->debug("setting training epochs to $value");
-		$self{$id}->{'epochs'} = $value;
+		return $self->{'epochs'} = $value;
 	}
 	else {
-		$log->debug("retrieving training epochs");
+		$log->debug("getting training epochs");
+		return $self->{'epochs'};
 	}
-	return $self{$id}->{'epochs'};
 }
 
 =item epoch_printfreq
@@ -287,17 +305,16 @@ Getter/setter for the number of epochs after which progress is printed. default 
 =cut
 
 sub epoch_printfreq {
-	my $ref = shift;
-	my $id = refaddr $ref;
+	my $self = shift;
 	if ( @_ ) {
 		my $value = shift;
 		$log->debug("setting epoch printfreq to $value");
-		$self{$id}->{'epoch_printfreq'} = $value;
+		return $self->{'epoch_printfreq'} = $value;
 	}
 	else {
-		$log->debug("retrieving epoch printfreq");
+		$log->debug("getting epoch printfreq");
+		return $self->{'epoch_printfreq'}
 	}
-	return $self{$id}->{'epoch_printfreq'};
 }
 
 =item neurons
@@ -307,17 +324,16 @@ Getter/setter for the number of neurons. Default is 15
 =cut
 
 sub neurons {
-	my $ref = shift;
-	my $id = refaddr $ref;
+	my $self = shift;
 	if ( @_ ) {
 		my $value = shift;
 		$log->debug("setting neurons to $value");
-		$self{$id}->{'neurons'} = $value;
+		return $self->{'neurons'} = $value;
 	}
 	else {
-		$log->debug("retrieving neurons");
+		$log->debug("getting neurons");
+		return $self->{'neurons'};
 	}
-	return $self{$id}->{'neurons'};
 }
 
 =item neuron_printfreq
@@ -328,17 +344,16 @@ default is 10
 =cut
 
 sub neuron_printfreq {
-	my $ref = shift;
-	my $id = refaddr $ref;
+	my $self = shift;
 	if ( @_ ) {
 		my $value = shift;
 		$log->debug("setting neuron printfreq to $value");
-		$self{$id}->{'neuron_printfreq'} = $value;
+		return $self->{'neuron_printfreq'} = $value;
 	}
 	else {	
-		$log->debug("retrieving neuron printfreq");
+		$log->debug("getting neuron printfreq");
+		return $self->{'neuron_printfreq'};
 	}
-	return $self{$id}->{'neuron_printfreq'};
 }
 
 =item train_type
@@ -348,17 +363,16 @@ Getter/setter for the training type: 'cascade' or 'ordinary'. Default is ordinar
 =cut
 
 sub train_type {
-	my $ref = shift;
-	my $id = refaddr $ref;
+	my $self = shift;
 	if ( @_ ) {
 		my $value = lc shift;
 		$log->debug("setting train type to $value"); 
-		$self{$id}->{'train_type'} = $value;
+		return $self->{'train_type'} = $value;
 	}
 	else {
-		$log->debug("retrieving train type");
+		$log->debug("getting train type");
+		return $self->{'train_type'};
 	}
-	return $self{$id}->{'train_type'};
 }
 
 =item activation_function
@@ -371,17 +385,39 @@ FANN_SIGMOID_SYMMETRIC
 =cut
 
 sub activation_function {
-	my $ref = shift;
-	my $id = refaddr $ref;
+	my $self = shift;
 	if ( @_ ) {
 		my $value = shift;
 		$log->debug("setting activation function to $value");
-		$self{$id}->{'activation_function'} = $value;
+		return $self->{'activation_function'} = $value;
 	}
 	else {
-		$log->debug("retrieving activation function");
+		$log->debug("getting activation function");
+		return $self->{'activation_function'};
 	}
-	return $self{$id}->{'activation_function'};
+}
+
+# this is here so that we can trap method calls that need to be 
+# delegated to the FANN object. at this point we're not even
+# going to care whether the FANN object implements these methods:
+# if it doesn't we get the normal error for unknown methods, which
+# the user then will have to resolve.
+sub AUTOLOAD {
+	my $self = shift;
+	my $method = $AUTOLOAD;
+	$method =~ s/.+://;
+	
+	# ignore all caps methods
+	if ( $method !~ /^[A-Z]+$/ ) {
+		my $ann = $self->{'ann'};
+		if ( @_ ) {
+			return $ann->$method(shift);
+		}
+		else {
+			return $ann->$method;
+		}
+	}
+	
 }
 
 1;
