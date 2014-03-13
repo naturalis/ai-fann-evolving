@@ -19,8 +19,6 @@ AI::FANN::Evolving::Chromosome - chromosome of an evolving, diploid AI
 
 Recombines properties of the AI during meiosis in proportion to the crossover_rate
 
-=back
-
 =cut
 
 sub recombine {
@@ -51,6 +49,22 @@ sub recombine {
 	# so we can't use the old object reference)
 	$chr1->genes($gen1);
 	$chr2->genes($gen2);	
+}
+
+=item clone
+
+Clones the object
+
+=back
+
+=cut
+
+sub clone {
+	my $self = shift;
+	my @genes = $self->genes;
+	my $self_clone = $self->SUPER::clone;
+	$self_clone->genes( map { $_->clone } @genes );
+	return $self_clone;
 }
 
 1;

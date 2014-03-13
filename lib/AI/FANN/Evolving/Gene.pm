@@ -45,22 +45,13 @@ Getter/setter for an L<AI::FANN::Evolving> ANN
 sub ann {
 	my $self = shift;
 	if ( @_ ) {
-		$log->debug("assigning and serializing ANN");
-		my $ann = shift;
-		my ( $fh, $ann_file ) = tempfile( 'DIR' => $self->experiment->workdir );
-		$ann->save($ann_file);
-		$self->{'ann'} = $ann_file;
-		return $ann;
+		my $ann = shift;	
+		$log->debug("setting ANN $ann");
+		return $self->{'ann'} = $ann;
 	}
 	else {
-		$log->debug("retrieving ANN");
-	}
-	if ( -e $self->{'ann'} ) {
-		$log->debug("instantiating ANN from file");
-		return AI::FANN::Evolving->new( 'file' => $self->{'ann'} );
-	}
-	else {
-		$log->warn("ANN file doesn't exist");
+		$log->debug("getting ANN");
+		return $self->{'ann'};
 	}
 }
 
@@ -126,6 +117,22 @@ Stores the fitness value after expressing the fitness function
 
 sub fitness { shift->{'fitness'} }
 
+=item clone
+
+Clones the object
+
+=cut
+
+sub clone {
+	my $self = shift;
+	my $ann = delete $self->{'ann'};
+	my $ann_clone = $ann->clone;
+	my $self_clone = $self->SUPER::clone;
+	$self_clone->ann( $ann_clone );
+	$self->ann( $ann );
+	return $self_clone;
+}
+
 =item mutate
 
 Mutates the ANN by stochastically altering its properties in proportion to 
@@ -142,10 +149,8 @@ sub mutate {
 	my $mu = $self->experiment->mutation_rate;
 
 	# make a clone, which we might mutate further
-	my $ann = $self->ann;
-	my $ann_clone  = $ann->clone;
 	my $self_clone = $self->clone;
-	$log->debug("cloned ANN $ann => $ann_clone");
+	my $ann_clone  = $self_clone->ann;
 	
 	# properties of ann we might mutate
 	# XXX equally do this for discrete properties?
@@ -166,7 +171,6 @@ sub mutate {
 	my $data = $self->experiment->traindata;
 	$log->debug("going to re-train using $data");
 	$ann_clone->train( $data );
-	$self_clone->ann( $ann_clone );
 	return $self_clone;
 }
 
