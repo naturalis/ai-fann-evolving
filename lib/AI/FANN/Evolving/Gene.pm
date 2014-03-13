@@ -102,7 +102,8 @@ sub make_function {
 			# the sum of the squared differences. because the input
 			# range is -1..1 we increment by one so they're always positive.
 			for my $j ( 0 .. $#{ $expected } ) {
-				$fitness += ( ( (1+$observed->[$j]) - (1+$expected->[$j]) ) ** 2 );
+				#$fitness += ( ( (1+$observed->[$j]) - (1+$expected->[$j]) ) ** 2 );
+				$fitness++ if ( $observed->[$j] > 0 ) xor ( $expected->[$j] > 0 );
 			}
 		}
 		$fitness /= $env->length;

@@ -66,7 +66,14 @@ my $inputdata = AI::FANN::Evolving::TrainData->new(
 	'dependent' => $data{'dependent'}, 
 	'ignore'    => $data{'ignore'},
 );
-my ( $traindata, $testdata ) = $inputdata->partition_data( $data{'partition'} );
+my ( $traindata, $testdata );
+if ( $data{'type'} and lc $data{'type'} eq 'continuous' ) {
+	( $traindata, $testdata ) = $inputdata->sample_data( $data{'partition'} );
+}
+else {
+	( $traindata, $testdata ) = $inputdata->partition_data( $data{'partition'} );
+}
+
 $log->info("number of training data records: ".$traindata->size);
 $log->info("number of test data records: ".$testdata->size);
 

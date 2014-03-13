@@ -119,6 +119,12 @@ my %constant = (
 	'FANN_STOPFUNC_BIT' => FANN_STOPFUNC_BIT,
 );
 
+=item defaults
+
+Getter/setter to influence default ANN configuration
+
+=cut
+
 sub defaults {
 	my $self = shift;
 	my %args = @_;
@@ -129,6 +135,7 @@ sub defaults {
 		}
 		$default{$key} = $args{$key};
 	}
+	return %default;
 }
 
 sub _init {
@@ -409,12 +416,24 @@ sub AUTOLOAD {
 	
 	# ignore all caps methods
 	if ( $method !~ /^[A-Z]+$/ ) {
-		my $ann = $self->{'ann'};
-		if ( @_ ) {
-			return $ann->$method(shift);
+	
+		# determine whether to invoke on an object or a package
+		my $invocant;
+		if ( ref $self ) {
+			$invocant = $self->{'ann'};
 		}
 		else {
-			return $ann->$method;
+			$invocant = 'AI::FANN';
+		}
+		
+		# determine whether to pass in arguments
+		if ( @_ ) {
+			my $arg = shift;
+			$arg = $constant{$arg} if exists $constant{$arg};
+			return $invocant->$method($arg);
+		}
+		else {
+			return $invocant->$method;
 		}
 	}
 	

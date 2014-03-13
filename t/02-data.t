@@ -5,8 +5,12 @@ use Algorithm::Genetic::Diploid::Logger ':levels';
 use Data::Dumper;
 
 # instantiate a data object
-my $file = "$Bin/../examples/butterbeetles.tsv";
-my $data = AI::FANN::Evolving::TrainData->new( 'file' => $file );
+my $file = "$Bin/../examples/merged.tsv";
+my $data = AI::FANN::Evolving::TrainData->new( 
+	'file'      => $file,
+	'ignore'    => [ 'image' ],
+	'dependent' => [ 'C1', 'C2', 'C3', 'C4' ],
+);
 ok( $data, "instantiate" );
 
 # partition the data

@@ -121,8 +121,8 @@ sub dependent_data {
 	}
 	else {
 		my @dep;
-		for $i ( 0 .. $self->size - 1 ) {
-			push @dep, $self->dependent_data($i);
+		for my $j ( 0 .. $self->size - 1 ) {
+			push @dep, $self->dependent_data($j);
 		}
 		return @dep;
 	}
