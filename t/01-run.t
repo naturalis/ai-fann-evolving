@@ -14,7 +14,7 @@ BEGIN {
 
 # create and configure logger
 my $log = new_ok('Algorithm::Genetic::Diploid::Logger');
-$log->level( 'level' => 3 );
+$log->level( 'level' => 4 );
 $log->formatter(sub{
 	my %args = @_;
 	if ( $args{'msg'} =~ /fittest at generation (\d+): (.+)/ ) {
@@ -24,8 +24,8 @@ $log->formatter(sub{
 	return '';
 });
 
-# set quieter
-AI::FANN::Evolving->defaults( 'epoch_printfreq' => 0 );
+# set quieter and quicker to give up
+AI::FANN::Evolving->defaults( 'epoch_printfreq' => 0, 'epochs' => 200 );
 
 # instantiate factory
 my $fac = new_ok('AI::FANN::Evolving::Factory');
@@ -50,7 +50,7 @@ my $exp = $fac->create_experiment(
 isa_ok( $exp, 'Algorithm::Genetic::Diploid::Experiment' );
 
 # initialize the experiment
-ok( $exp->initialize( 'individual_count' => 4 ), "initialized" );
+ok( $exp->initialize( 'individual_count' => 2 ), "initialized" );
 
 # run!
 my ( $fittest, $fitness ) = $exp->run();

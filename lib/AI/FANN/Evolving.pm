@@ -2,6 +2,7 @@ package AI::FANN::Evolving;
 use strict;
 use warnings;
 use AI::FANN ':all';
+use List::Util 'shuffle';
 use File::Temp 'tempfile';
 use AI::FANN::Evolving::Gene;
 use AI::FANN::Evolving::Chromosome;
@@ -14,6 +15,60 @@ our $VERSION = '0.3';
 our $AUTOLOAD;
 my $log = __PACKAGE__->logger;
 
+my %enum = (
+	'train' => {
+#		'FANN_TRAIN_INCREMENTAL' => FANN_TRAIN_INCREMENTAL, # only want batch training
+		'FANN_TRAIN_BATCH'       => FANN_TRAIN_BATCH,
+		'FANN_TRAIN_RPROP'       => FANN_TRAIN_RPROP,
+		'FANN_TRAIN_QUICKPROP'   => FANN_TRAIN_QUICKPROP,	
+	},
+	'activationfunc' => {
+		'FANN_LINEAR'                     => FANN_LINEAR,
+#		'FANN_THRESHOLD'                  => FANN_THRESHOLD, # can not be used during training
+#		'FANN_THRESHOLD_SYMMETRIC'        => FANN_THRESHOLD_SYMMETRIC, # can not be used during training
+#		'FANN_SIGMOID'                    => FANN_SIGMOID, # range is between 0 and 1
+#		'FANN_SIGMOID_STEPWISE'           => FANN_SIGMOID_STEPWISE, # range is between 0 and 1
+		'FANN_SIGMOID_SYMMETRIC'          => FANN_SIGMOID_SYMMETRIC,
+		'FANN_SIGMOID_SYMMETRIC_STEPWISE' => FANN_SIGMOID_SYMMETRIC_STEPWISE,
+#		'FANN_GAUSSIAN'                   => FANN_GAUSSIAN, # range is between 0 and 1
+		'FANN_GAUSSIAN_SYMMETRIC'         => FANN_GAUSSIAN_SYMMETRIC,
+		'FANN_GAUSSIAN_STEPWISE'          => FANN_GAUSSIAN_STEPWISE,
+#		'FANN_ELLIOT'                     => FANN_ELLIOT, # range is between 0 and 1
+		'FANN_ELLIOT_SYMMETRIC'           => FANN_ELLIOT_SYMMETRIC,
+#		'FANN_LINEAR_PIECE'               => FANN_LINEAR_PIECE, # range is between 0 and 1
+		'FANN_LINEAR_PIECE_SYMMETRIC'     => FANN_LINEAR_PIECE_SYMMETRIC,
+		'FANN_SIN_SYMMETRIC'              => FANN_SIN_SYMMETRIC,
+		'FANN_COS_SYMMETRIC'              => FANN_COS_SYMMETRIC,
+#		'FANN_SIN'                        => FANN_SIN, # range is between 0 and 1
+#		'FANN_COS'                        => FANN_COS, # range is between 0 and 1
+	},
+	'errorfunc' => {
+		'FANN_ERRORFUNC_LINEAR' => FANN_ERRORFUNC_LINEAR,
+		'FANN_ERRORFUNC_TANH'   => FANN_ERRORFUNC_TANH,	
+	},
+	'stopfunc' => {
+		'FANN_STOPFUNC_MSE' => FANN_STOPFUNC_MSE,
+#		'FANN_STOPFUNC_BIT' => FANN_STOPFUNC_BIT,
+	}	
+);
+
+my %constant;
+for my $hashref ( values %enum ) {
+	while( my ( $k, $v ) = each %{ $hashref } ) {
+		$constant{$k} = $v;
+	}
+}
+
+my %default = (
+	'error'               => 0.0001,
+	'epochs'              => 5000,
+	'train_type'          => 'ordinary',
+	'epoch_printfreq'     => 100,
+	'neuron_printfreq'    => 0,
+	'neurons'             => 15,
+	'activation_function' => FANN_SIGMOID_SYMMETRIC,
+);
+
 =head1 NAME
 
 AI::FANN::Evolving - artificial neural network that evolves
@@ -25,7 +80,7 @@ AI::FANN::Evolving - artificial neural network that evolves
 =item new
 
 Constructor requires 'file', or 'data' and 'neurons' arguments. Optionally takes 
-'connection_rate' argument for sparse topologies. Returns a subclass of L<AI::FANN>.
+'connection_rate' argument for sparse topologies. Returns a wrapper around L<AI::FANN>.
 
 =cut
 
@@ -65,59 +120,242 @@ sub new {
 		}
 		
 		# finalize the instance
-		$self->train( $data );
+		return $self;
+	}
+	
+	# build new ANN using argument as a template
+	elsif ( my $ann = $args{'ann'} ) {
+		$log->debug("instantiating from template $ann");
+		
+		# copy the wrapper properties
+		%{ $self } = %{ $ann };
+		
+		# instantiate the network dimensions
+		$self->{'ann'} = AI::FANN->new_standard(
+			$ann->num_inputs, 
+			$ann->num_inputs + 1,
+			$ann->num_outputs,
+		);
+		
+		# copy the AI::FANN properties
+		$ann->template($self->{'ann'});
 		return $self;
 	}
 	else {
-		die "Need 'file' or 'data' argument!";
+		die "Need 'file', 'data' or 'ann' argument!";
 	}
 }
 
-my %default = (
-	'error'               => 0.0001,
-	'epochs'              => 5000,
-	'train_type'          => 'ordinary',
-	'epoch_printfreq'     => 100,
-	'neuron_printfreq'    => 0,
-	'neurons'             => 15,
-	'activation_function' => FANN_SIGMOID_SYMMETRIC,
-);
+=item template
 
-my %constant = (
-	# enum fann_train_enum
-	'FANN_TRAIN_INCREMENTAL' => FANN_TRAIN_INCREMENTAL,
-	'FANN_TRAIN_BATCH'       => FANN_TRAIN_BATCH,
-	'FANN_TRAIN_RPROP'       => FANN_TRAIN_RPROP,
-	'FANN_TRAIN_QUICKPROP'   => FANN_TRAIN_QUICKPROP,
+Uses the object as a template for the properties of the argument, e.g.
+$ann1->template($ann2) applies the properties of $ann1 to $ann2
 
-	# enum fann_activationfunc_enum
-	'FANN_LINEAR'                     => FANN_LINEAR,
-	'FANN_THRESHOLD'                  => FANN_THRESHOLD,
-	'FANN_THRESHOLD_SYMMETRIC'        => FANN_THRESHOLD_SYMMETRIC,
-	'FANN_SIGMOID'                    => FANN_SIGMOID,
-	'FANN_SIGMOID_STEPWISE'           => FANN_SIGMOID_STEPWISE,
-	'FANN_SIGMOID_SYMMETRIC'          => FANN_SIGMOID_SYMMETRIC,
-	'FANN_SIGMOID_SYMMETRIC_STEPWISE' => FANN_SIGMOID_SYMMETRIC_STEPWISE,
-	'FANN_GAUSSIAN'                   => FANN_GAUSSIAN,
-	'FANN_GAUSSIAN_SYMMETRIC'         => FANN_GAUSSIAN_SYMMETRIC,
-	'FANN_GAUSSIAN_STEPWISE'          => FANN_GAUSSIAN_STEPWISE,
-	'FANN_ELLIOT'                     => FANN_ELLIOT,
-	'FANN_ELLIOT_SYMMETRIC'           => FANN_ELLIOT_SYMMETRIC,
-	'FANN_LINEAR_PIECE'               => FANN_LINEAR_PIECE,
-	'FANN_LINEAR_PIECE_SYMMETRIC'     => FANN_LINEAR_PIECE_SYMMETRIC,
-	'FANN_SIN_SYMMETRIC'              => FANN_SIN_SYMMETRIC,
-	'FANN_COS_SYMMETRIC'              => FANN_COS_SYMMETRIC,
-	'FANN_SIN'                        => FANN_SIN,
-	'FANN_COS'                        => FANN_COS,
+=cut
 
-	# enum fann_errorfunc_enum
-	'FANN_ERRORFUNC_LINEAR' => FANN_ERRORFUNC_LINEAR,
-	'FANN_ERRORFUNC_TANH'   => FANN_ERRORFUNC_TANH,
+sub template {
+	my ( $self, $other ) = @_;
+	
+	# copy over the simple properties
+	$log->debug("copying over simple properties");
+	my %scalar_properties = __PACKAGE__->_scalar_properties;
+	for my $prop ( keys %scalar_properties ) {
+		my $val = $self->$prop;
+		$other->$prop($val);
+	}
+	
+	# copy over the list properties
+	$log->debug("copying over list properties");
+	my %list_properties = __PACKAGE__->_list_properties;
+	for my $prop ( keys %list_properties ) {
+		my @values = $self->$prop;
+		$other->$prop(@values);
+	}
+	
+	# copy over the layer properties
+	$log->debug("copying over layer properties");
+	my %layer_properties = __PACKAGE__->_layer_properties;
+	for my $prop ( keys %layer_properties ) {
+		for my $i ( 0 .. $self->num_layers - 1 ) {
+			for my $j ( 0 .. $self->layer_num_neurons($i) - 1 ) {
+				my $val = $self->$prop($i,$j);
+				$other->$prop($i,$j,$val);			
+			}
+		}
+	}
+	return $self;
+}
 
-	# enum fann_stopfunc_enum
-	'FANN_STOPFUNC_MSE' => FANN_STOPFUNC_MSE,
-	'FANN_STOPFUNC_BIT' => FANN_STOPFUNC_BIT,
-);
+=item recombine
+
+Recombines (exchanges) properties between the two objects at the provided rate, e.g.
+$ann1->recombine($ann2,0.5) means that on average half of the object properties are
+exchanged between $ann1 and $ann2
+
+=cut
+
+sub recombine {
+	my ( $self, $other, $rr ) = @_;
+	
+	# recombine the simple properties
+	my %scalar_properties = __PACKAGE__->_scalar_properties;
+	for my $prop ( keys %scalar_properties ) {
+		if ( rand(1) < $rr ) {			
+			my $vals = $self->$prop;
+			my $valo = $other->$prop;
+			$other->$prop($vals);
+			$self->$prop($valo);
+		}
+	}
+	
+	# copy over the list properties
+	my %list_properties = __PACKAGE__->_list_properties;
+	for my $prop ( keys %list_properties ) {
+		if ( rand(1) < $rr ) {
+			my @values = $self->$prop;
+			my @valueo = $other->$prop;
+			$other->$prop(@values);
+			$self->$prop(@valueo);
+		}
+	}
+	
+	# copy over the layer properties
+	my %layer_properties = __PACKAGE__->_layer_properties;
+	for my $prop ( keys %layer_properties ) {
+		for my $i ( 0 .. $self->num_layers - 1 ) {
+			for my $j ( 0 .. $self->layer_num_neurons($i) - 1 ) {
+				my $val = $self->$prop($i,$j);
+				$other->$prop($i,$j,$val);			
+			}
+		}
+	}
+	return $self;	
+}
+
+=item mutate
+
+Mutates the object by the provided mutation rate
+
+=cut
+
+sub mutate {
+	my ( $self, $mu ) = @_;
+	$log->info("going to mutate at rate $mu");
+	
+	# mutate the simple properties
+	$log->debug("mutating scalar properties");
+	my %scalar_properties = __PACKAGE__->_scalar_properties;
+	for my $prop ( keys %scalar_properties ) {
+		my $handler = $scalar_properties{$prop};
+		my $val = $self->$prop;
+		if ( ref $handler ) {
+			$self->$prop( $handler->($val,$mu) );
+		}
+		else {
+			$self->$prop( _mutate_enum($handler,$val,$mu) );
+		}
+	}	
+	
+	# mutate the list properties
+	$log->debug("mutating list properties");
+	my %list_properties = __PACKAGE__->_list_properties;
+	for my $prop ( keys %list_properties ) {
+		my $handler = $list_properties{$prop};		
+		my @values = $self->$prop;
+		if ( ref $handler ) {
+			$self->$prop( map { $handler->($_,$mu) } @values );
+		}
+		else {
+			$self->$prop( map { _mutate_enum($handler,$_,$mu) } @values );
+		}		
+	}	
+	
+	# mutate the layer properties
+	$log->debug("mutating layer properties");
+	my %layer_properties = __PACKAGE__->_layer_properties;
+	for my $prop ( keys %layer_properties ) {
+		my $handler = $layer_properties{$prop};
+		for my $i ( 1 .. $self->num_layers ) {
+			for my $j ( 1 .. $self->layer_num_neurons($i) ) {
+				my $val = $self->$prop($i,$j);
+				if ( ref $handler ) {
+					$self->$prop( $handler->($val,$mu) );
+				}
+				else {
+					$self->$prop( _mutate_enum($handler,$val,$mu) );
+				}
+			}
+		}
+	}
+	return $self;
+}
+
+sub _mutate_double {
+	my ( $value, $mu ) = @_;
+	my $scale = 1 + ( rand( 2 * $mu ) - $mu );
+	return $value * $scale;
+}
+
+sub _mutate_int {
+	my ( $value, $mu ) = @_;
+	if ( rand(1) < $mu ) {
+		my $inc = ( int(rand(2)) * 2 ) - 1;
+		while( ( $value < 0 ) xor ( ( $value + $inc ) < 0 ) ) {
+			$inc = ( int(rand(2)) * 2 ) - 1;
+		}
+		return $value + $inc;
+	}
+	return $value;
+}
+
+sub _mutate_enum {
+	my ( $enum_name, $value, $mu ) = @_;
+	if ( rand(1) < $mu ) {
+		my ($newval) = shuffle grep { $_ != $value } values %{ $enum{$enum_name} };
+		$value = $newval if defined $newval;
+	}
+	return $value;
+}
+
+sub _list_properties {
+	(
+#		cascade_activation_functions   => 'activationfunc',
+		cascade_activation_steepnesses => \&_mutate_double,
+	)
+}
+
+sub _layer_properties {
+	(
+#		neuron_activation_function  => 'activationfunc',
+#		neuron_activation_steepness => \&_mutate_double,
+	)
+}
+
+sub _scalar_properties {
+	(
+		training_algorithm                   => 'train',
+		train_error_function                 => 'errorfunc',
+		train_stop_function                  => 'stopfunc',
+		learning_rate                        => \&_mutate_double,
+		learning_momentum                    => \&_mutate_double,
+		quickprop_decay                      => \&_mutate_double,
+		quickprop_mu                         => \&_mutate_double,
+		rprop_increase_factor                => \&_mutate_double,
+		rprop_decrease_factor                => \&_mutate_double,
+		rprop_delta_min                      => \&_mutate_double,
+		rprop_delta_max                      => \&_mutate_double,
+		cascade_output_change_fraction       => \&_mutate_double,
+		cascade_candidate_change_fraction    => \&_mutate_double,
+		cascade_output_stagnation_epochs     => \&_mutate_int,
+		cascade_candidate_stagnation_epochs  => \&_mutate_int,
+		cascade_max_out_epochs               => \&_mutate_int,
+		cascade_max_cand_epochs              => \&_mutate_int,
+		cascade_num_candidate_groups         => \&_mutate_int,
+		bit_fail_limit                       => \&_mutate_double, # 'fann_type',
+		cascade_weight_multiplier            => \&_mutate_double, # 'fann_type',
+		cascade_candidate_limit              => \&_mutate_double, # 'fann_type',
+	)
+}
 
 =item defaults
 
@@ -166,7 +404,7 @@ sub clone {
 	my $clone = $self->SUPER::clone;
 	
 	# clone the ANN by writing it to a temp file in "FANN/FLO"
-	# format and reading that back in
+	# format and reading that back in, then delete the file
 	my ( $fh, $file ) = tempfile();
 	close $fh;
 	$ann->save($file);
@@ -218,54 +456,12 @@ sub train {
 	}
 }
 
-=item continuous_properties
-
-Returns a list of names for the AI::FANN properties that are continuous valued and that 
-can be mutated
-
-=cut
-
-sub continuous_properties {
-	(
-		'learning_rate',
-		'learning_momentum',
-		'quickprop_decay',
-		'quickprop_mu',
-		'rprop_increase_factor',
-		'rprop_decrease_factor',
-#		'cascade_output_change_fraction',
-		'cascade_candidate_change_fraction',
-		'cascade_candidate_limit',
-		'cascade_weight_multiplier',
-#		'rprop_delta_min',
-#		'rprop_delta_max',
-	);
-}
-
-=item discrete_properties
-
-Returns a list of names for the AI::FANN properties that are discrete valued and that 
-can be mutated
-
-=cut
-
-sub discrete_properties {
-	(
-	
-	
-	);
-}
-
 =item enum_properties
 
 Returns a hash whose keys are names of enums and values the possible states for the
 enum
 
 =cut
-
-sub enum_properties {
-
-}
 
 =item error
 
@@ -432,7 +628,7 @@ sub AUTOLOAD {
 			$arg = $constant{$arg} if exists $constant{$arg};
 			return $invocant->$method($arg);
 		}
-		else {
+		else {		
 			return $invocant->$method;
 		}
 	}

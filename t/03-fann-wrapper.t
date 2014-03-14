@@ -8,6 +8,7 @@ BEGIN {
 	use_ok('AI::FANN::Evolving::TrainData');
 }
 
+##########################################################################################
 # create a trivial data object:
 my $data = AI::FANN::Evolving::TrainData->new(
 	'header' => {
@@ -28,8 +29,10 @@ my $data = AI::FANN::Evolving::TrainData->new(
 );
 ok( $data->size == 4, "instantiate data correctly" );
 
+##########################################################################################
 # train the FANN object on trivial data
 my $ann = AI::FANN::Evolving->new( 'data' => $data, 'epoch_printfreq' => 0 );
+$ann->train($data->to_fann);
 
 # run the network
 # this is the xor example from:

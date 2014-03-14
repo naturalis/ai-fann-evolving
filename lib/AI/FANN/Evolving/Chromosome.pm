@@ -28,22 +28,7 @@ sub recombine {
 	my ( $gen1 ) = map { $_->mutate } $chr1->genes;
 	my ( $gen2 ) = map { $_->mutate } $chr2->genes;	
 	my ( $ann1, $ann2 ) = ( $gen1->ann, $gen2->ann );
-	my $exp = $chr1->experiment;
-	
-	# XXX equally do this for discrete properties?
-	for my $prop ( AI::FANN::Evolving->continuous_properties ) {
-	
-		# switch values every time rand() is below crossover
-		my $rate = $exp->crossover_rate;
-		my $val = rand(1);
-		if ( $val <= $rate ) {
-			$log->debug("recombination of $prop");
-			my $prop1 = $ann1->$prop;
-			my $prop2 = $ann2->$prop;
-			$ann1->$prop($prop2);
-			$ann2->$prop($prop1);
-		}
-	}
+	$ann1->recombine($ann2,$chr1->experiment->crossover_rate);
 	
 	# assign the genes to the chromosomes (this because they are clones
 	# so we can't use the old object reference)
