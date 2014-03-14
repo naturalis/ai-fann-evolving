@@ -240,7 +240,7 @@ Mutates the object by the provided mutation rate
 
 sub mutate {
 	my ( $self, $mu ) = @_;
-	$log->info("going to mutate at rate $mu");
+	$log->debug("going to mutate at rate $mu");
 	
 	# mutate the simple properties
 	$log->debug("mutating scalar properties");
