@@ -79,8 +79,8 @@ $log->info("number of test data records: ".$testdata->size);
 
 # create first work dir
 my $wd  = delete $experiment{'workdir'}; 
+make_path($wd);
 $wd .= '/0';
-make_path( $wd );
 
 # create the experiment
 my $exp = AI::FANN::Evolving::Experiment->new( 
