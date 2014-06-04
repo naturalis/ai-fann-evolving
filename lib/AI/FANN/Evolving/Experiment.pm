@@ -100,10 +100,73 @@ sub run {
 The optimal fitness is zero error in the ANN's classification. This method returns 
 that value: 0.
 
+=cut
+
+sub optimum { 0 }
+
+sub _sign {
+	my ( $obs, $exp ) = @_;
+	my $fitness = 0;
+	for my $i ( 0 .. $#{ $obs } ) {
+		$fitness += ( ( $obs->[$i] > 0 ) xor ( $exp->[$i] > 0 ) );
+	}
+	return $fitness / scalar(@{$obs});
+}
+
+sub _mse {
+	my ( $obs, $exp ) = @_;
+	my $fitness = 0;
+	for my $i ( 0 .. $#{ $obs } ) {
+		$fitness += ( ( (1+$obs->[$i]) - (1+$exp->[$i]) ) ** 2 );
+	}
+	return $fitness / scalar(@{$obs});	
+}
+
+=item error_func
+
+Returns a function to compute the error. Given an argument, the following can happen:
+ 'sign' => error is the average number of times observed and expected have different signs
+ 'mse'  => error is the mean squared difference between observed and expected
+ CODE   => error function is the provided code reference
+
 =back
 
 =cut
 
-sub optimum { 0 }
+sub error_func {
+	my $self = shift;
+	
+	# process the argument
+	if ( @_ ) {
+		my $arg = shift;
+		if ( ref $arg eq 'CODE' ) {
+			$self->{'error_func'} = $arg;
+			$log->info("using custom error function");
+		}
+		elsif ( $arg eq 'sign' ) {
+			$self->{'error_func'} = \&_sign;
+			$log->info("using sign test error function");
+		}
+		elsif ( $arg eq 'mse' ) {
+			$self->{'error_func'} = \&_mse;
+			$log->info("using MSE error function");
+		}
+		else {
+			$log->warn("don't understand error func '$arg'");
+		}
+	}
+	
+	# map the constructor-supplied argument
+	if ( $self->{'error_func'} and $self->{'error_func'} eq 'sign' ) {
+		$self->{'error_func'} = \&_sign;
+		$log->info("using error function 'sign'");
+	}
+	elsif ( $self->{'error_func'} and $self->{'error_func'} eq 'mse' ) {
+		$self->{'error_func'} = \&_mse;
+		$log->info("using error function 'mse'");
+	}	
+	
+	return $self->{'error_func'} || \&_mse;
+}
 
 1;

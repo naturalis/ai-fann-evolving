@@ -65,6 +65,7 @@ value and writes the corresponding ANN to file
 sub make_function {
 	my $self = shift;
 	my $ann = $self->ann;
+	my $error_func = $self->experiment->error_func;
 	$log->debug("making fitness function");
 	
 	# build the fitness function
@@ -92,15 +93,8 @@ sub make_function {
 			$log->debug("Observed: ".Dumper($observed));
 			$log->debug("Expected: ".Dumper($expected));
 			
-			# iterate over the observed and expected values. we take
-			# the sum of the squared differences. because the input
-			# range is -1..1 we increment by one so they're always positive.
-			for my $j ( 0 .. $#{ $expected } ) {
-				$fitness += ( ( (1+$observed->[$j]) - (1+$expected->[$j]) ) ** 2 );
-				
-				# XXX use me for time series
-				#$fitness++ if ( $observed->[$j] > 0 ) xor ( $expected->[$j] > 0 );
-			}
+			# invoke the error_func provided by the experiment
+			$fitness += $error_func->($observed,$expected);
 		}
 		$fitness /= $env->length;
 		
