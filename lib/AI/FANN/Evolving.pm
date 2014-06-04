@@ -11,7 +11,7 @@ use AI::FANN::Evolving::Factory;
 use Algorithm::Genetic::Diploid;
 use base qw'Algorithm::Genetic::Diploid::Base';
 
-our $VERSION = '0.3';
+our $VERSION = '0.4';
 our $AUTOLOAD;
 my $log = __PACKAGE__->logger;
 
