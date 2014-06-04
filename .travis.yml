@@ -1,3 +1,4 @@
+env: PERL_CPANM_OPT="--notest --force --skip-satisfied"
 before_script:
   - sudo apt-get update
   - sudo apt-get install libai-fann-perl
