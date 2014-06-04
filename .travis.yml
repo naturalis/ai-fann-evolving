@@ -1,5 +1,6 @@
 before_script:
-  - sudo apt-get install perl-AI-FANN
+  - sudo apt-get update
+  - sudo apt-get install libai-fann-perl
 language: perl
 perl:
   - "5.16"
