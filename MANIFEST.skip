@@ -25,3 +25,4 @@ _Inline*
 Doxyfile
 lib\/xs*
 lib\/util*
+.travis.yml
