@@ -1,3 +1,7 @@
+before_script:
+  - sudo apt-get install cmake
+  - git clone https://github.com/libfann/fann.git
+  - cd fann && cmake . && sudo make install
 language: perl
 perl:
   - "5.16"
