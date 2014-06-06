@@ -380,7 +380,7 @@ sub _init {
 	my $self = shift;
 	my %args = @_;
 	for ( qw(error epochs train_type epoch_printfreq neuron_printfreq neurons activation_function) ) {
-		$self->{$_} = $args{$_} // $default{$_};
+		$self->{$_} = defined $args{$_} ? $args{$_} : $default{$_};
 	}
 	return $self;
 }
