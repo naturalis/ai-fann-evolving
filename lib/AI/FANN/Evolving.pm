@@ -403,8 +403,8 @@ sub clone {
 	my $ann = delete $self->{'ann'};
 	my $clone = $self->SUPER::clone;
 	
-	# clone the ANN by writing it to a temp file in "FANN/FLO"
-	# format and reading that back in, then delete the file
+	# clone the ANN by writing it to a temp file
+	# and reading that back in, then delete the file
 	my ( $fh, $file ) = tempfile();
 	close $fh;
 	$ann->save($file);
