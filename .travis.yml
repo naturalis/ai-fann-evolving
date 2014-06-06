@@ -1,7 +1,7 @@
-env: PERL_CPANM_OPT="--notest --force --skip-satisfied"
-before_script:
+install:
   - sudo apt-get update
   - sudo apt-get install libfann2 libfann-dev
+  - cpanm --installdeps --notest .
 language: perl
 perl:
   - "5.16"
