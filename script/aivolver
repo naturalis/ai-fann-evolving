@@ -66,12 +66,23 @@ my $inputdata = AI::FANN::Evolving::TrainData->new(
 	'dependent' => $data{'dependent'},
 	'ignore'    => $data{'ignore'},
 );
+
+# subsample the data
 my ( $traindata, $testdata );
-if ( $data{'type'} and lc $data{'type'} eq 'continuous' ) {
-	( $traindata, $testdata ) = $inputdata->sample_data( $data{'fraction'} );
-}
-else {
-	( $traindata, $testdata ) = $inputdata->partition_data( $data{'fraction'} );
+{
+
+	# special case for fraction == 1: all data are used both for testing and for training
+	if ( $data{'fraction'} == 1 ) {
+		( $traindata, $testdata ) = ( $inputdata, $inputdata->clone );
+	}
+	else {
+		if ( $data{'type'} and lc $data{'type'} eq 'continuous' ) {
+			( $traindata, $testdata ) = $inputdata->sample_data( $data{'fraction'} );
+		}
+		else {
+			( $traindata, $testdata ) = $inputdata->partition_data( $data{'fraction'} );
+		}
+	}
 }
 
 $log->info("number of training data records: ".$traindata->size);
