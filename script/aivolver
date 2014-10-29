@@ -58,14 +58,20 @@ $log->level( 'level' => $verbosity );
 $log->formatter( $formatter );
 
 # read input data
-my $deps   = join ', ', @{ $data{'dependent'} };
-my $ignore = join ', ', @{ $data{'ignore'} };
-$log->info("going to read train data $data{file}, ignoring '$ignore', dependent columns are '$deps'");
-my $inputdata = AI::FANN::Evolving::TrainData->new(
-	'file'      => $data{'file'},
-	'dependent' => $data{'dependent'},
-	'ignore'    => $data{'ignore'},
-);
+my $inputdata = AI::FANN::Evolving::TrainData->new();
+my $ignore = join ', ', $inputdata->ignore_columns(@{ $data{'ignore'} });
+
+$log->info("going to read train data $data{file}, ignoring '$ignore'");
+$inputdata->read_data($data{'file'});
+
+if ( defined $data{'dependent'} ) {
+	$inputdata->dependent_columns(@{ $data{'dependent'} });
+}
+if ( defined $data{'dependent_prefix'} ) {
+	$inputdata->dependent_columns_prefix($data{'dependent_prefix'});
+}
+my $deps = join ', ', $inputdata->dependent_columns();
+$log->info("finished reading train data $data{file}; dependent columns are '$deps'");
 
 # subsample the data
 my ( $traindata, $testdata );

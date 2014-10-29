@@ -11,9 +11,9 @@ experiment:
 data:
   file: phenotyper.tsv # input data as TSV, location relative to CWD
   partition: 0.50 # amount of data to use for training
-  dependent: [ 	OUT.1, OUT.2, OUT.3, OUT.4 ] # classification columns
+  dependent_prefix: "OUT." # prefix used for classification columns
   ignore: [ ID ] # uninformative columns to ignore, e.g. unique record identifiers
-initialize: 
+initialize:
   individual_count: 5 # number of individuals in population
   chromosome_count: 1 # number of non-homologous chromosomes (i.e. n for diploid org)
   gene_count: 1 # number of genes per chromosome

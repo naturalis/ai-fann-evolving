@@ -39,7 +39,7 @@ sub new {
 
 =item ignore_columns
 
-Getter/setter for column names to ignore in the train data structure. 
+Getter/setter for column names to ignore in the train data structure.
 For example: an identifier columns named 'ID'
 
 =cut
@@ -60,6 +60,23 @@ sub dependent_columns {
 	my $self = shift;
 	$self->{'dependent'} = \@_ if @_;
 	return @{ $self->{'dependent'} };
+}
+
+=item dependent_columns_prefix
+
+Getter/setter for column name(s) of the output value(s) from a prefix used for
+dependent columns. Can only be used after data has been read.
+
+=cut
+
+sub dependent_columns_prefix {
+	my ( $self, $prefix ) = @_;
+	if ( ! %{ $self->{'header'} } ) {
+		die "Cannot set dependent columns from prefix without data\n";
+	}
+	$prefix = quotemeta($prefix);
+	my @deps = grep {/^$prefix/} sort keys %{ $self->{'header'} };
+	return $self->dependent_columns(@deps);
 }
 
 =item predictor_columns
@@ -85,10 +102,10 @@ sub predictor_data {
 	my ( $self, %args ) = @_;
 	my $i = $args{'row'};
 	my @cols = $args{'cols'} ? @{ $args{'cols'} } : $self->predictor_columns;
-	
+
 	# build hash of indices to keep
 	my %keep = map { $self->{'header'}->{$_} => 1 } @cols;
-	
+
 	# only return a single row
 	if ( defined $i ) {
 		my @pred;
@@ -153,6 +170,12 @@ sub read_data {
 	}
 	$self->{'header'} = \%header;
 	$self->{'table'}  = \@table;
+
+	# Set the dependent columns if dependent prefix is used.
+	if ( $self->{'dependent_prefix'} ) {
+		$self->dependent_columns_prefix($self->{'dependent_prefix'});
+	}
+
 	return $self;
 }
 
@@ -164,7 +187,7 @@ Writes to provided output file
 
 sub write_data {
 	my ( $self, $file ) = @_;
-	
+
 	# use file or STDOUT
 	my $fh;
 	if ( $file ) {
@@ -175,12 +198,12 @@ sub write_data {
 		$fh = \*STDOUT;
 		$log->info("writing data to STDOUT");
 	}
-	
+
 	# print header
 	my $h = $self->{'header'};
 	print $fh join "\t", sort { $h->{$a} <=> $h->{$b} } keys %{ $h };
 	print $fh "\n";
-	
+
 	# print rows
 	for my $row ( @{ $self->{'table'} } ) {
 		print $fh join "\t", @{ $row };
@@ -241,7 +264,7 @@ sub partition_data {
 	my $clone2 = $self->clone;
 	my $remain = 1 - $sample;
 	$log->info("going to partition into $sample : $remain");
-		
+
 	# compute number of different dependent patterns and ratios of each
 	my @dependents = $self->dependent_data;
 	my %seen;
@@ -249,7 +272,7 @@ sub partition_data {
 		my $key = join '/', @{ $dep };
 		$seen{$key}++;
 	}
-	
+
 	# adjust counts to sample size
 	for my $key ( keys %seen ) {
 		$log->debug("counts: $key => $seen{$key}");
@@ -257,12 +280,12 @@ sub partition_data {
 		$log->debug("rescaled: $key => $seen{$key}");
 	}
 
-	# start the sampling	
+	# start the sampling
 	my @dc = map { $self->{'header'}->{$_} } $self->dependent_columns;
 	my @new_table; # we will populate this
 	my @table = @{ $clone1->{'table'} }; # work on cloned instance
-	
-	# as long as there is still sampling to do 
+
+	# as long as there is still sampling to do
 	SAMPLE: while( grep { !!$_ } values %seen ) {
 		for my $i ( 0 .. $#table ) {
 			my @r = @{ $table[$i] };
